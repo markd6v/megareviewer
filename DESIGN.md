@@ -46,8 +46,10 @@ The diff view was designed for a world where code was expensive and every line w
 
 - **Product form:** standalone web UI.
 - **First slice:** take a GitHub PR and produce a guided review: an intent summary, hunks sorted by risk with mechanical ones collapsed, and a list of extracted decisions. This covers principles 1–4, which the rest build on.
+- **Primary users:** both. A solo dev reviewing their own agent's output needs to *understand* it; a teammate reviewing someone else's PR needs to *trust* it. The same review has to serve both.
+- **Intent sources:** intent is extracted, not entered by hand, from:
+  - the PR description;
+  - Jira tickets mentioned in the description, commits or branch name;
+  - the code itself, inferred from what the change actually does.
 
-## Open questions
-
-- **Primary user:** a solo dev reviewing their own agent's output (needs to *understand* it), or a teammate reviewing someone else's PR (needs to *trust* it)?
-- **Intent capture:** a standalone UI doesn't see the agent session. Where does intent come from: PR description, linked ticket, or an uploaded transcript?
+  Stated intent (description, tickets) and intent inferred from the code are shown side by side. A mismatch between them is a finding in itself: the change does something nobody asked for, or misses something that was asked.
