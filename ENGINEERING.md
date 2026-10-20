@@ -48,7 +48,7 @@ domain  ←  application  ←  adapters  ←  cli (composition root)
 ```
 
 - **domain:** types and pure logic. No I/O, clock, randomness or framework. The one library it may import is Zod.
-- **application:** use cases (`AnalyzePullRequest`, `RecordVerdict`, `PublishReview`) and the ports they need (`GitHost`, `TicketSource`, `AnalysisModel`, `AnalysisStore`, `Clock`).
+- **application:** use cases (`AnalyzePullRequest`, `RecordVerdict`, `PublishReview`) and the ports they need (`GitHost`, `TicketSource`, `AnalysisModel`, `AnalysisStore`, `CodeParser`, `Clock`, `Logger`).
 - **adapters:** implementations of the ports (GitHub, Bitbucket, Jira, Claude, SQLite, tree-sitter), plus the HTTP API.
 - **cli:** wires adapters into use cases. It is the only place that knows concrete implementations.
 - **web:** talks to the server only through the HTTP API contract.

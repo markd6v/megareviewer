@@ -166,7 +166,8 @@ SQLite at `~/.megareviewer/db.sqlite`:
 |---|---|
 | `analyses` | host, repo, PR number, head SHA, pipeline version, status, result JSON |
 | `decision_reviews` | analysis, decision ID, status (pending / approved / rejected), comment |
-| `published_comments` | analysis, decision ID, host comment ID, published time |
+| `published_comments` | analysis, comment key (a decision or the summary), host comment ID, published time |
+| `publications` | analysis, review URL, published time |
 
 The pipeline version changes whenever prompts or schemas change, which invalidates cached analyses.
 
