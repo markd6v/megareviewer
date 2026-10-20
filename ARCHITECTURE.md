@@ -16,13 +16,35 @@ Why:
 
 - **Nothing to host or pay for.** Users bring their own Anthropic credentials.
 - **Privacy is simple to explain.** "Your code never leaves your machine, except to the model provider" makes security reviews easy.
-- **A local process can do what a browser page can't.** It can call Jira (which blocks cross-origin browser requests), reuse the `gh` token, read the local git checkout, and later read agent transcripts on disk.
+- **A local process can do what a browser page can't.** It can call Jira and Bitbucket (which block cross-origin browser requests), reuse the `gh` token, read the local git checkout, and later read agent transcripts on disk.
 
 Costs we accept:
 
-- **No shared state between reviewers.** GitHub is the shared store: the review is published back to the PR.
-- **Each reviewer pays for their own analysis.** A GitHub Action that precomputes it is the later fix.
+- **No shared state between reviewers.** The git host is the shared store: the review is published back to the PR.
+- **Each reviewer pays for their own analysis.** A CI step that precomputes it is the later fix.
 - **No webhooks,** so analysis starts when the PR is opened in the UI. Results stream so the intent summary shows up first.
+
+## Git hosts
+
+Supported: **GitHub** and **Bitbucket Cloud**.
+
+The pipeline and UI never talk to a host directly. Each host is a connector behind one interface:
+
+| Operation | GitHub | Bitbucket Cloud |
+|---|---|---|
+| Get PR (title, description, branch, head SHA) | `GET /repos/{o}/{r}/pulls/{n}` | `GET /2.0/repositories/{ws}/{repo}/pullrequests/{id}` |
+| Get commits | `.../pulls/{n}/commits` | `.../pullrequests/{id}/commits` |
+| Get diff (unified) | `.../pulls/{n}` with diff media type | `.../pullrequests/{id}/diff` |
+| Get file at commit | `.../contents/{path}?ref={sha}` | `.../src/{sha}/{path}` |
+| List PRs to review | Search API (`review-requested:@me`, `author:@me`) | Per repo, filtered by reviewer and author, across the configured workspace |
+| Publish review | One PR review with inline comments and a verdict | Approve or request changes, plus one call per inline comment |
+
+Both hosts return a unified diff, so hunk splitting and everything after it is shared.
+
+Bitbucket specifics:
+
+- **No cross-repo "waiting for my review" search.** The picker scans the repos of the configured workspace. A pasted PR URL always works.
+- **Publishing isn't atomic.** Comments are posted one by one, so the server records each posted comment and skips it on retry, avoiding duplicates after a partial failure.
 
 ## Components
 
@@ -30,7 +52,7 @@ Costs we accept:
 flowchart LR
   CLI[CLI] --> Server[Local server]
   UI[Web UI<br/>Vite + React] <-->|HTTP + SSE| Server
-  Server --> GH[GitHub API]
+  Server --> Hosts[Git hosts<br/>GitHub, Bitbucket]
   Server --> Jira[Jira API]
   Server --> Claude[Claude API]
   Server --> DB[(SQLite<br/>~/.megareviewer)]
@@ -41,7 +63,7 @@ flowchart LR
 | CLI | Checks credentials, starts the server, opens the browser | Node 22+, TypeScript |
 | Local server | Serves the UI and the API, runs the analysis pipeline, holds all credentials | Hono |
 | Web UI | PR picker, review page, publishing | Vite, React, Shiki |
-| Connectors | Fetch PR data, tickets, model calls | Octokit, Jira REST, `@anthropic-ai/sdk` |
+| Connectors | Git hosts, tickets, model calls | Octokit, Bitbucket REST, Jira REST, `@anthropic-ai/sdk` |
 | Code analysis | Parse changed files for mechanical proofs and call-graph hints | `web-tree-sitter` |
 | Store | Cached analyses and review state | SQLite (`better-sqlite3`) + Drizzle |
 
@@ -51,19 +73,20 @@ It ships as one npm package: the UI is prebuilt and served as static files by th
 
 | Service | Source | Required |
 |---|---|---|
-| GitHub | `GITHUB_TOKEN`, else `gh auth token` | Yes |
+| GitHub | `GITHUB_TOKEN`, else `gh auth token` | For GitHub PRs |
+| Bitbucket Cloud | `BITBUCKET_EMAIL` + `BITBUCKET_API_TOKEN` (scoped Atlassian API token), `BITBUCKET_WORKSPACE` for the picker | For Bitbucket PRs |
 | Anthropic | SDK default resolution: `ANTHROPIC_API_KEY`, else an `ant auth login` profile | Yes |
 | Jira | `JIRA_BASE_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN` | No. Without it, ticket keys are shown but not fetched |
 
-Credentials stay in the server process and are never sent to the browser.
+At least one git host must be configured. Credentials stay in the server process and are never sent to the browser.
 
 ## Analysis pipeline
 
-Input is a PR (`owner/repo#number`). Output is one analysis, cached by `(repo, PR, head SHA, pipeline version)`, so reopening a PR is instant and a new push triggers a fresh analysis.
+Input is a PR URL from either host. Output is one analysis, cached by `(host, repo, PR, head SHA, pipeline version)`, so reopening a PR is instant and a new push triggers a fresh analysis.
 
 ### 1. Collect
 
-- PR title, description, branch name, commits, and the diff, from the GitHub API.
+- PR title, description, branch name, commits, and the diff, from the host connector.
 - Base and head contents of each changed file, for parsing and context.
 - Jira tickets: keys matching `[A-Z][A-Z0-9]+-\d+` in the description, commit messages and branch name, fetched from Jira.
 
@@ -73,7 +96,7 @@ Input is a PR (`owner/repo#number`). Output is one analysis, cached by `(repo, P
 - Mark hunks as **mechanical with proof** when a check proves it:
   - generated or vendored files (lockfiles, `linguist-generated` in `.gitattributes`, known build output);
   - whitespace-only changes;
-  - pure renames (git rename detection with no content change);
+  - pure renames (rename headers in the diff with no content change);
   - moved code (removed and added blocks match after normalization);
   - formatting-only changes (tree-sitter syntax trees are identical before and after).
 - Build call-graph hints with tree-sitter: which changed symbols are defined, and which changed code references them.
@@ -105,7 +128,7 @@ PR content is untrusted. A description or code comment can contain text aimed at
 
 ## UI
 
-**PR picker.** Lists PRs waiting for the user's review and their own open PRs (GitHub search), or accepts a pasted PR URL.
+**PR picker.** Lists PRs waiting for the user's review and their own open PRs from every configured host, or accepts a pasted PR URL.
 
 **Review page.**
 
@@ -113,7 +136,7 @@ PR content is untrusted. A description or code comment can contain text aimed at
 - **Left:** tour steps and the decision checklist. Each decision can be approved, rejected or commented on.
 - **Main:** the diff for the current step, with a risk badge on each hunk. Mechanical hunks are collapsed with their proof ("moved, verified identical"), and the user can expand them.
 
-**Publish.** Sends the review to GitHub as a single PR review: approve or request changes. Rejected decisions and comments become inline comments on their hunks. The user confirms before anything is posted.
+**Publish.** Sends the review to the PR's host with a verdict (approve or request changes). Rejected decisions and comments become inline comments on their hunks. The user confirms before anything is posted.
 
 ## Storage
 
@@ -121,9 +144,9 @@ SQLite at `~/.megareviewer/db.sqlite`:
 
 | Table | Holds |
 |---|---|
-| `analyses` | repo, PR number, head SHA, pipeline version, status, result JSON |
+| `analyses` | host, repo, PR number, head SHA, pipeline version, status, result JSON |
 | `decision_reviews` | analysis, decision ID, status (pending / approved / rejected), comment |
-| `published_reviews` | analysis, GitHub review ID, published time |
+| `published_comments` | analysis, decision ID, host comment ID, published time |
 
 The pipeline version changes whenever prompts or schemas change, which invalidates cached analyses.
 
@@ -134,7 +157,7 @@ The pipeline version changes whenever prompts or schemas change, which invalidat
 
 ## First slice
 
-In scope: the CLI, PR picker, all four model passes, the review page, decision approvals stored locally, and publishing to GitHub.
+In scope: the CLI, GitHub and Bitbucket Cloud connectors, PR picker, all four model passes, the review page, decision approvals stored locally, and publishing to the host.
 
 Later, in rough order:
 
@@ -142,5 +165,5 @@ Later, in rough order:
 2. Carry decision statuses over when a PR gets new commits.
 3. Agent transcripts (e.g. Claude Code sessions) as an intent source.
 4. Ask the code (principle 7).
-5. A GitHub Action that precomputes the analysis and attaches it to the PR.
+5. A CI step (GitHub Action, Bitbucket Pipelines) that precomputes the analysis and attaches it to the PR.
 6. Desktop app via Tauri.

@@ -45,7 +45,7 @@ The diff view was designed for a world where code was expensive and every line w
 ## Decisions
 
 - **Product form:** standalone web UI, served locally by a CLI, with no server of ours. See [ARCHITECTURE.md](ARCHITECTURE.md).
-- **First slice:** take a GitHub PR and produce a guided review: an intent summary, hunks sorted by risk with mechanical ones collapsed, and a list of extracted decisions. This covers principles 1–4, which the rest build on.
+- **First slice:** take a GitHub or Bitbucket Cloud PR and produce a guided review: an intent summary, hunks sorted by risk with mechanical ones collapsed, and a list of extracted decisions. This covers principles 1–4, which the rest build on.
 - **Primary users:** both. A solo dev reviewing their own agent's output needs to *understand* it; a teammate reviewing someone else's PR needs to *trust* it. The same review has to serve both.
 - **Intent sources:** intent is extracted, not entered by hand, from:
   - the PR description;
