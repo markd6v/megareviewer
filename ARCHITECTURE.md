@@ -60,14 +60,34 @@ flowchart LR
 
 | Component | Role | Tech |
 |---|---|---|
-| CLI | Checks credentials, starts the server, opens the browser | Node 22+, TypeScript |
+| CLI | Checks credentials, starts the server, opens the browser | Node 24+, TypeScript |
 | Local server | Serves the UI and the API, runs the analysis pipeline, holds all credentials | Hono |
 | Web UI | PR picker, review page, publishing | Vite, React, Shiki |
 | Connectors | Git hosts, tickets, model calls | Octokit, Bitbucket REST, Jira REST, `@anthropic-ai/sdk` |
 | Code analysis | Parse changed files for mechanical proofs and call-graph hints | `web-tree-sitter` |
-| Store | Cached analyses and review state | SQLite (`better-sqlite3`) + Drizzle |
+| Store | Cached analyses and review state | SQLite via built-in `node:sqlite`, plain SQL migrations |
 
-It ships as one npm package: the UI is prebuilt and served as static files by the server.
+It ships as one npm package. The server is bundled into a single file with no runtime dependencies, and the UI is prebuilt and served as static files.
+
+## Why TypeScript everywhere
+
+- **The UI is TypeScript anyway.** Using it for the server too means one language, one toolchain, and one set of Zod schemas shared by the model calls, the server and the UI.
+- **The libraries we need are first-class in TypeScript.** Octokit, the Anthropic SDK with Zod helpers, and tree-sitter's WASM build.
+- **Easy install.** `npx` works on almost every developer machine with nothing extra to install.
+
+Trade-offs we accept, and how we limit them:
+
+| Trade-off | Mitigation |
+|---|---|
+| npm supply-chain risk in a tool that holds credentials | The server is bundled at publish time, so users install one package with no dependencies and no third-party install scripts. No native modules (hence `node:sqlite`). Few dependencies (see [ENGINEERING.md](ENGINEERING.md)). |
+| Users need Node | Bun can compile the same code into a single binary if that becomes a blocker. |
+| Weaker for heavy analysis later | The HTTP API between UI and server is the seam: the server can be rewritten in Go without touching the UI. |
+
+Alternatives considered:
+
+- **Go server + TypeScript UI:** a single binary and a smaller attack surface, but two toolchains and a schema generated for both. We'd switch if security-sensitive buyers or install friction become the blocker.
+- **Rust:** no official Claude SDK, and slower iteration that doesn't pay off for mostly-network work.
+- **Python:** the hardest to install on users' machines.
 
 ## Credentials
 
