@@ -34,7 +34,7 @@ The pipeline and UI never talk to a host directly. Each host is a connector behi
 |---|---|---|
 | Get PR (title, description, branch, head SHA) | `GET /repos/{o}/{r}/pulls/{n}` | `GET /2.0/repositories/{ws}/{repo}/pullrequests/{id}` |
 | Get commits | `.../pulls/{n}/commits` | `.../pullrequests/{id}/commits` |
-| Get diff (unified) | `.../pulls/{n}` with diff media type | `.../pullrequests/{id}/diff` |
+| Get diff (unified) | `.../compare/{base}...{head}` at the PR's SHAs, with diff media type, so a push while loading can't mismatch diff and head SHA | `.../pullrequests/{id}/diff` |
 | Get file at commit | `.../contents/{path}?ref={sha}` | `.../src/{sha}/{path}` |
 | List PRs to review | Search API (`review-requested:@me`, `author:@me`) | Per repo, filtered by reviewer and author, across the configured workspace |
 | Publish review | One PR review with inline comments and a verdict | Approve or request changes, plus one call per inline comment |

@@ -82,15 +82,23 @@ GitHub creates a review with all its comments in one call, so it's atomic.
 
 ## Definition of done
 
-- [ ] Contract suite passes.
-- [ ] Every error-mapping row is tested.
-- [ ] Fixtures contain no tokens or personal data beyond public GitHub usernames.
-- [ ] Recorder works, or the open issue says which fixtures are synthetic.
+- [x] Contract suite passes.
+- [x] Every error-mapping row is tested.
+- [x] Fixtures contain no tokens or personal data beyond public GitHub usernames.
+- [x] Recorder works, or the open issue says which fixtures are synthetic.
 
 ## Open issues
 
-_None yet._
+- **Synthetic fixtures** (see `src/adapters/github/fixtures/PROVENANCE.md`): search, publish, 401 and rate-limited. Publishing fixtures need a sandbox repo the user owns and their go-ahead. Until then it's unverified whether `GET …/reviews/{id}/comments` returns `line` and `side` (optional in GitHub's schema); matching works either way.
 
 ## Notes for later stages
 
-_None yet._
+Where the code differs from or adds to this doc:
+
+- **Options** are `{ token, version, clock, logger, fetch? }`. Stage 12 passes the app version (for `megareviewer/<version>`) and a `Clock`, used for `x-ratelimit-reset` delays and for receipts GitHub gives no time for.
+- **The diff comes from `GET /compare/{base.sha}...{head.sha}`** with the diff media type, not from the PR URL, so the diff, `baseSha` and `headSha` describe the same commits even when someone pushes while the PR loads. It's the same three-dot diff (byte-identical on sindresorhus/is#210). A compare too large to diff fails with 422 "The diff is taking too long to generate", mapped to `too-large`. The commits list isn't pinned: a push mid-load can add newer commits.
+- **Publishing.** The verdict travels with the summary in one review, so when `summary` is already posted, the remaining comments go out as a `COMMENT` review with no body. Comments are matched back by path and body, plus line and side when GitHub returns them (CRLF normalized, trimmed). A comment that can't be matched, or every comment when reading them back fails, is recorded under the review's ID with a warning, so a retry doesn't post it twice. With nothing left to post, the receipt has `url: null`.
+- **Errors beyond the table:** 429 is always `rate-limited`; `retry-after` counts only as whole seconds; other statuses (400, 409, …) are `unexpected`. `getFile` returns `ok(null)` for any 404, including a repo the token can't see, because GitHub doesn't tell them apart.
+- **Mapping.** Summaries' owner and repo are lowercased like `parsePullRequestUrl`; their `url` keeps GitHub's casing. A deleted account is `ghost`. A commit's `author` is the git author name, else the account login, else `""`.
+- **Logging.** Octokit's request log, including failed requests, goes to `debug`: failures come back as `HostError`s for the caller to report. The adapter warns when GitHub's 250-commit cap may have cut the list, when a search returned only some PRs, and for unmatched comments.
+- **Recorder** needs Node 24 (it's run as `.ts`). It records only the PR's reads and `/user`, not the search (it would capture the token owner's own PRs). It keeps only the fields the schemas read and replaces names with logins.
