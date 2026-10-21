@@ -194,9 +194,9 @@ All with stage 02 fakes and fixtures:
 
 ## Definition of done
 
-- [ ] Every use case above exists and is exported from `createUseCases`.
-- [ ] Every fail-safe rule in task 3 has a test.
-- [ ] Coverage thresholds pass (application and domain).
+- [x] Every use case above exists and is exported from `createUseCases`.
+- [x] Every fail-safe rule in task 3 has a test.
+- [x] Coverage thresholds pass (application and domain).
 
 ## Open issues
 
@@ -204,4 +204,15 @@ _None yet._
 
 ## Notes for later stages
 
-_None yet._
+Where the code differs from or adds to this doc.
+
+- **Shape.** `createUseCases(deps, { version })` returns `startAnalysis`, `retryAnalysis`, `recoverInterruptedAnalyses`, `getAnalysisView`, `recordVerdict`, `previewPublication`, `publishReview`, `listPullRequests` and `getStatus`. Each returns `Result<T, UseCaseError>`, except listing and status, which never fail, and recovery, which returns how many analyses it failed. Stage 12 calls recovery before serving.
+- **`ErrorCode` is repeated in the application layer,** because dependency rules keep `contracts/` out of it. Stage 11: assert at compile time that it equals the contract's `ErrorCode`, and that `AnalysisView`, `Status` and `PullRequestList` fit the contract's response types.
+- **Host errors.** `not-found` stays `not-found`; every other kind, `unauthorized` included, is `host-error`, because the API's `unauthorized` (401) means a bad session token.
+- **Collect.** A `getFile` failure fails the analysis with `host-error` naming the file, except `too-large`, which counts as unavailable like a file over 1 MB. With Jira unconfigured or failing, every ticket key goes into `missingTicketKeys`, so the UI still shows them.
+- **Retries go beyond the doc.** An unparseable answer (`invalid-output`) is retried once with the error message as feedback, in every pass, as stage 08 suggested. When the retry of an answer with problems fails outright, the first answer is repaired instead of failing. Intent mismatches' hunk IDs are validated like decisions': retry, then drop unknown IDs with a warning. Feedback lines name the hunk and what to fix, e.g. `h_… is in no step. Put every hunk sent in full in exactly one step.`
+- **Size.** Dropping `headContent` finds the fewest largest files to drop by binary search, so a check costs about log₂(files) + 2 `checkSize` calls instead of one per file. The model is told nothing about the dropped contents beyond the warning.
+- **Failures.** Analysis error codes are `host-error`, `model-error`, `internal` (a bug: the pipeline caught an exception, logged it, and failed the running stage) and `interrupted`. When risk or decisions fails, the other pass still finishes and keeps its result.
+- **Publishing.** Concurrent `publishReview` calls for one analysis share one attempt. The stored receipt's `postedCommentIds` include comments an earlier, partly failed attempt posted. `isAuthor` asks the host for the current user on every view and preview (not cached); `stale` is cached for 60 seconds per analysis, and a failed check counts as not stale (publishing checks again).
+- **`buildPublication`.** A rejection without a comment gets just the bold heading. A decision whose hunks have no changed lines, or are all unknown, goes into the summary. The summary repeats a rejection's comment, and shows other comments only when they have no inline anchor; multi-line comments are joined into one line there. Without a tour, hunks are in file order.
+- **`FakeCodeParser`** was added to `src/application/testing/` for these tests (see stage 02's change log).
