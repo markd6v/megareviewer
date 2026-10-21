@@ -1,0 +1,96 @@
+import { z } from "zod";
+import { CallGraphHint, FileChange, MechanicalProof } from "../diff/index.ts";
+import { fnv1a64 } from "../shared/index.ts";
+import { Decision } from "./decision.ts";
+import { Intent, Ticket } from "./intent.ts";
+import { Sha, Timestamp } from "./primitives.ts";
+import { PullRequest, PullRequestRef } from "./pull-request.ts";
+import { RiskAssessment } from "./risk.ts";
+import { Tour } from "./tour.ts";
+
+export const StageName = z.enum(["collect", "prep", "intent", "risk", "decisions", "tour"]);
+export type StageName = z.infer<typeof StageName>;
+
+export const StageStatus = z.enum(["pending", "running", "done", "failed"]);
+export type StageStatus = z.infer<typeof StageStatus>;
+
+export const AnalysisId = z
+  .string()
+  .regex(/^a_[0-9a-f]{16}$/)
+  .brand<"AnalysisId">();
+export type AnalysisId = z.infer<typeof AnalysisId>;
+
+/** Changes whenever the pipeline or the model passes change, e.g. "1+claude-opus-5-5/p3". */
+export const PipelineVersion = z.string().min(1);
+export type PipelineVersion = z.infer<typeof PipelineVersion>;
+
+export const AnalysisKey = z
+  .object({
+    ref: PullRequestRef,
+    headSha: Sha,
+    pipelineVersion: PipelineVersion,
+  })
+  .readonly();
+export type AnalysisKey = z.infer<typeof AnalysisKey>;
+
+export const ModelPass = z.enum(["intent", "risk", "decisions", "tour"]);
+export type ModelPass = z.infer<typeof ModelPass>;
+
+const TokenCount = z.number().int().nonnegative();
+
+export const ModelUsage = z
+  .object({
+    pass: ModelPass,
+    inputTokens: TokenCount,
+    cacheReadTokens: TokenCount,
+    cacheWriteTokens: TokenCount,
+    outputTokens: TokenCount,
+    costUsd: z.number().nonnegative(),
+  })
+  .readonly();
+export type ModelUsage = z.infer<typeof ModelUsage>;
+
+export const AnalysisError = z
+  .object({
+    stage: StageName,
+    code: z.string().min(1),
+    message: z.string(),
+  })
+  .readonly();
+export type AnalysisError = z.infer<typeof AnalysisError>;
+
+export const AnalysisStatus = z.enum(["running", "complete", "failed"]);
+export type AnalysisStatus = z.infer<typeof AnalysisStatus>;
+
+export const Analysis = z
+  .object({
+    id: AnalysisId,
+    key: AnalysisKey,
+    status: AnalysisStatus,
+    stages: z.record(StageName, StageStatus).readonly(),
+    pullRequest: PullRequest.nullable(),
+    files: z.array(FileChange).readonly(),
+    tickets: z.array(Ticket).readonly(),
+    /** Ticket keys found in the PR that Jira didn't return. */
+    missingTicketKeys: z.array(z.string()).readonly(),
+    proofs: z.array(MechanicalProof).readonly(),
+    callGraph: z.array(CallGraphHint).readonly(),
+    intent: Intent.nullable(),
+    risk: z.array(RiskAssessment).readonly(),
+    decisions: z.array(Decision).readonly(),
+    tour: Tour.nullable(),
+    warnings: z.array(z.string()).readonly(),
+    usage: z.array(ModelUsage).readonly(),
+    error: AnalysisError.nullable(),
+    createdAt: Timestamp,
+    updatedAt: Timestamp,
+  })
+  .readonly();
+export type Analysis = z.infer<typeof Analysis>;
+
+/** Deterministic, so the same PR at the same head SHA and pipeline version maps to one analysis. */
+export const analysisId = (key: AnalysisKey): AnalysisId => {
+  const { host, owner, repo } = key.ref.repo;
+  const input = `${host}/${owner}/${repo}#${key.ref.number}@${key.headSha}+${key.pipelineVersion}`;
+  return AnalysisId.parse(`a_${fnv1a64(input)}`);
+};
