@@ -1,6 +1,6 @@
 # Stage 04: tree-sitter: formatting proofs and call-graph hints
 
-**Status:** In progress (on main; CI not yet confirmed)
+**Status:** Done (pushed to main without a PR; CI green on 4d4488c)
 **Depends on:** 02
 **Unblocks:** 12 (and gives stage 10 a real `CodeParser`; stage 10 can use the fake until then)
 **Owns:** `src/adapters/treesitter/`, `src/domain/diff/formatting.ts`, `src/domain/diff/call-graph.ts`
