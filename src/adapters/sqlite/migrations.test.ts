@@ -1,0 +1,75 @@
+import { DatabaseSync } from "node:sqlite";
+import { describe, expect, it } from "vitest";
+import { MIGRATIONS, migrate, schemaVersion } from "./migrations.ts";
+
+/**
+ * A database at an earlier schema version, for testing a migration against the data before it.
+ * A migration test opens `databaseAt(n - 1)`, inserts rows the old schema allows, migrates to the
+ * latest version and checks the rows came through.
+ */
+const databaseAt = (version: number): DatabaseSync => {
+  const db = new DatabaseSync(":memory:");
+  migrate(db, MIGRATIONS.slice(0, version));
+  return db;
+};
+
+const tableNames = (db: DatabaseSync): unknown[] =>
+  db
+    .prepare("SELECT name FROM sqlite_schema WHERE type = 'table' ORDER BY name")
+    .all()
+    .map((row) => row.name);
+
+describe("migrate", () => {
+  it("brings a fresh database to the latest version", () => {
+    const db = new DatabaseSync(":memory:");
+
+    expect(migrate(db, MIGRATIONS)).toEqual(MIGRATIONS.map((_, index) => index + 1));
+    expect(schemaVersion(db)).toBe(MIGRATIONS.length);
+    expect(tableNames(db)).toEqual([
+      "analyses",
+      "decision_reviews",
+      "publications",
+      "published_comments",
+    ]);
+  });
+
+  it("applies nothing to a database that is up to date", () => {
+    const db = databaseAt(MIGRATIONS.length);
+
+    expect(migrate(db, MIGRATIONS)).toEqual([]);
+    expect(schemaVersion(db)).toBe(MIGRATIONS.length);
+  });
+
+  it("migrates a version 1 database forward once, keeping its rows", () => {
+    const db = databaseAt(1);
+    db.exec(`INSERT INTO analyses VALUES
+      ('a_0123456789abcdef', 'github', 'acme', 'shop', 1, 'sha', 'v1', 'complete', '{}', 't', 't')`);
+    const later = [...MIGRATIONS, "ALTER TABLE analyses ADD COLUMN reviewed_by TEXT"];
+
+    expect(migrate(db, later)).toEqual([2]);
+    expect(migrate(db, later)).toEqual([]);
+    expect(schemaVersion(db)).toBe(2);
+    expect(db.prepare("SELECT id, reviewed_by FROM analyses").all()).toEqual([
+      { id: "a_0123456789abcdef", reviewed_by: null },
+    ]);
+  });
+
+  it("rolls back a failed migration and stays at the last good version", () => {
+    const db = databaseAt(1);
+    const broken = [
+      ...MIGRATIONS,
+      "CREATE TABLE notes (id TEXT); INSERT INTO no_such_table VALUES (1)",
+    ];
+
+    expect(() => migrate(db, broken)).toThrow(/no_such_table/);
+    expect(schemaVersion(db)).toBe(1);
+    expect(tableNames(db)).not.toContain("notes");
+  });
+
+  it("refuses a database from a newer megareviewer", () => {
+    const db = databaseAt(MIGRATIONS.length);
+    db.exec(`PRAGMA user_version = ${MIGRATIONS.length + 1}`);
+
+    expect(() => migrate(db, MIGRATIONS)).toThrow(/newer than this megareviewer knows/);
+  });
+});

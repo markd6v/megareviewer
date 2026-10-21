@@ -93,9 +93,9 @@ The table names match ARCHITECTURE.md "Storage".
 
 ## Definition of done
 
-- [ ] Contract suite passes for in-memory and file databases.
-- [ ] Migration tests pass.
-- [ ] No native modules added.
+- [x] Contract suite passes for in-memory and file databases.
+- [x] Migration tests pass.
+- [x] No native modules added.
 
 ## Open issues
 
@@ -103,4 +103,12 @@ _None yet._
 
 ## Notes for later stages
 
-_None yet._
+Where the code differs from or adds to this doc.
+
+- **A `clock` option.** `recordPostedComment` takes no time but `published_comments.posted_at` needs one, so the options are `{ path, clock, logger }`. Stage 12 passes the system clock.
+- **Node 24 or later.** `node:sqlite` needs a flag on Node 22.11, so run tests with the Node in `.nvmrc`.
+- **The file must be in an existing directory.** The store creates the file (mode `0600`, and tightens an existing file to `0600`), not `~/.megareviewer/`. Stage 12 creates the directory, ideally with mode `0700`.
+- **A newer schema throws.** Opening a database whose `user_version` is higher than the migrations this build knows (a downgrade) throws an `Error` saying to upgrade. Stage 12 should show that message rather than a stack trace.
+- **Writes for an unknown analysis throw.** Foreign keys are on, so `saveVerdict`, `recordPostedComment` and `recordPublication` reject for an analysis that was never saved. The in-memory fake accepts them. Use cases always save the analysis first, so this only catches bugs.
+- **`close()` is idempotent,** so a shutdown handler can call it more than once.
+- **Adding a migration:** append to `MIGRATIONS` in `migrations.ts`, never edit an applied one, and test it with `databaseAt(n - 1)` in `migrations.test.ts`. Each migration runs in its own `BEGIN IMMEDIATE` transaction with its `user_version` bump, and re-reads the version inside it so two processes opening the same file don't both apply it.
