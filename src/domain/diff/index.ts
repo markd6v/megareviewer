@@ -1,5 +1,6 @@
 export { hunkId } from "./hunk-id.ts";
 export { type DiffParseError, parseUnifiedDiff } from "./parse-diff.ts";
+export { findMechanicalProofs, type ProofContext } from "./proofs.ts";
 export {
   CallGraphHint,
   DiffLine,
@@ -10,3 +11,4 @@ export {
   MechanicalProof,
   MechanicalProofKind,
 } from "./types.ts";
+export { lockfileWarnings } from "./warnings.ts";
