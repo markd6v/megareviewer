@@ -1,6 +1,6 @@
 # Stage 06: Bitbucket Cloud adapter
 
-**Status:** In progress (branch stage/06-bitbucket-adapter)
+**Status:** Done (pushed to main without a PR; CI green on 70a3fbd)
 **Depends on:** 02
 **Unblocks:** 12
 **Owns:** `src/adapters/bitbucket/`
