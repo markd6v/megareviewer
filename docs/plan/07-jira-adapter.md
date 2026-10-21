@@ -1,6 +1,6 @@
 # Stage 07: Jira adapter
 
-**Status:** Not started
+**Status:** In progress (branch stage/07-jira-adapter)
 **Depends on:** 02
 **Unblocks:** 12
 **Owns:** `src/adapters/jira/`
