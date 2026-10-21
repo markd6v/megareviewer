@@ -37,6 +37,7 @@ export {
 } from "./intent.ts";
 export { HttpUrl, Sha, Timestamp } from "./primitives.ts";
 export {
+  buildPublication,
   CommentKey,
   Publication,
   PublicationComment,
