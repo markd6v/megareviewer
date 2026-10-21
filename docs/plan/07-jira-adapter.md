@@ -1,6 +1,6 @@
 # Stage 07: Jira adapter
 
-**Status:** In progress (branch stage/07-jira-adapter)
+**Status:** Done (pushed to main without a PR; CI green on 62cb18b)
 **Depends on:** 02
 **Unblocks:** 12
 **Owns:** `src/adapters/jira/`
