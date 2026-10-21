@@ -1,3 +1,5 @@
+export { buildCallGraphHints, type FileSymbols } from "./call-graph.ts";
+export { findFormattingProofs } from "./formatting.ts";
 export { hunkId } from "./hunk-id.ts";
 export { type DiffParseError, parseUnifiedDiff } from "./parse-diff.ts";
 export { findMechanicalProofs, type ProofContext } from "./proofs.ts";
