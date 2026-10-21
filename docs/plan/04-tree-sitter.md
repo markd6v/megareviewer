@@ -1,6 +1,6 @@
 # Stage 04: tree-sitter: formatting proofs and call-graph hints
 
-**Status:** In progress (on main)
+**Status:** In progress (on main; CI not yet confirmed)
 **Depends on:** 02
 **Unblocks:** 12 (and gives stage 10 a real `CodeParser`; stage 10 can use the fake until then)
 **Owns:** `src/adapters/treesitter/`, `src/domain/diff/formatting.ts`, `src/domain/diff/call-graph.ts`
@@ -137,10 +137,10 @@ Positive: re-indented TypeScript, reflowed Go, re-wrapped Java arguments, Python
 
 ## Definition of done
 
-- [ ] Grammars for all languages in the table load, with `PROVENANCE.md` filled in.
-- [ ] `CodeParser` passes its tests.
-- [ ] Every adversarial formatting case has a test and is not proved.
-- [ ] Coverage thresholds pass for the two domain files.
+- [x] Grammars for all languages in the table load, with `PROVENANCE.md` filled in.
+- [x] `CodeParser` passes its tests.
+- [x] Every adversarial formatting case has a test and is not proved.
+- [x] Coverage thresholds pass for the two domain files.
 
 ## Open issues
 
@@ -148,4 +148,15 @@ _None yet._
 
 ## Notes for later stages
 
-_None yet._
+Where the code differs from or adds to this doc:
+
+- **Grammar sourcing: neither A nor B exactly.** Each grammar is the prebuilt `.wasm` its maintainers attach to their GitHub release, downloaded at a pinned tag and committed to `src/adapters/treesitter/grammars/` (about 11 MB, C# is half of it). That gives exact versions and upstream provenance without an emscripten toolchain or a new npm dependency. `@vscode/tree-sitter-wasm` (option A) ships the same files but doesn't say which grammar versions three of them are. `refresh.sh` re-downloads them; a test checks every `.wasm` against the hashes in `PROVENANCE.md`.
+- **The runtime is committed too.** `grammars/web-tree-sitter.wasm` is a copy of the installed `web-tree-sitter`'s, so `grammarsDir` holds everything the parser loads. A test fails when the two differ: after bumping `web-tree-sitter`, run `refresh.sh`.
+- **Queries live in `grammars/queries/`**, not `queries/`, so the whole folder is the runtime asset. Stage 12: copy `src/adapters/treesitter/grammars/` to `dist/grammars/` including `queries/` (`PROVENANCE.md` and `refresh.sh` can be left out). `tsx` and `javascript` share `jsx.scm` for component references.
+- **Language names** are the tree-sitter names: `typescript`, `tsx`, `javascript`, `python`, `go`, `java`, `rust`, `c_sharp`. Stage 14 maps them to Shiki's names (`c_sharp` is `csharp` there). `languageFor` lowercases the extension.
+- **Syntax nodes carry tree shape.** Pre-order alone isn't enough: dedenting a Python statement out of an `if` gives the same node sequence. Each inner node is closed by `{ type: "", text: "" }`. Source text no node covers is listed as `{ type: "", text }` unless it's spaces, tabs, CR or LF, because a grammar can hide part of a literal (Rust raw strings leave their delimiters and leading space outside any node). See stage 02's change log.
+- **Formatting proofs are stricter than the doc:** no proof for a binary file, a file with a mode change (as in stage 03), or empty node lists. A multi-line block comment that's re-indented changes the comment's text, so it isn't proved either.
+- **Symbols and parse errors.** `symbols` also returns `parse-error` for a file with a syntax error, so a file that doesn't parse gets neither proof nor hints. Grammar load failures (a missing `.wasm`) throw: they're packaging bugs.
+- **Symbols cover a bit more than the doc lists.** Definitions include module-level variables (not only exported ones: Go, Python and Rust have no `export`), Java and C# fields, C# properties (as `method`), and Rust macros (as `function`). A class's methods are inside the class's range, so changing a method also changes the class. References include the object of a member access (`config` in `config.port`) and `extends` targets. A definition's own name isn't a reference.
+- **Call-graph hints.** `buildCallGraphHints` takes a `FileSymbols` map (exported from `src/domain/diff/`), which `CodeParser.symbols` results fit as they are. Hints come out in diff order of the referencing hunk. Removing lines from a definition doesn't count as changing it (only added lines do), as the doc says.
+- **Later improvement:** formatting proofs per hunk instead of per file.
