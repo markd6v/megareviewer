@@ -1,6 +1,6 @@
 # Stage 01: Scaffolding and tooling
 
-**Status:** Not started
+**Status:** In progress (branch stage/01-scaffolding)
 **Depends on:** —
 **Unblocks:** everything
 **Owns:** root config files, `.github/`, the folder skeleton, `src/domain/shared/`
