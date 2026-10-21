@@ -1,6 +1,6 @@
 # Stage 09: SQLite store
 
-**Status:** In progress (branch stage/09-sqlite-store)
+**Status:** Done (pushed to main without a PR; CI green on 57fb9a4)
 **Depends on:** 02
 **Unblocks:** 12
 **Owns:** `src/adapters/sqlite/`
