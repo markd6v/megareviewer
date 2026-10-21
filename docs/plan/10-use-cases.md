@@ -1,6 +1,6 @@
 # Stage 10: Use cases and pipeline
 
-**Status:** In progress (branch stage/10-use-cases)
+**Status:** Done (pushed to main without a PR; CI green on 0d4b6a1)
 **Depends on:** 02, 03 (uses fakes for every port, so adapters don't need to be done)
 **Unblocks:** 11, 16
 **Owns:** `src/application/use-cases/`, `src/application/events/`, `src/domain/review/publication.ts`
