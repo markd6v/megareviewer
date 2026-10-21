@@ -1,0 +1,35 @@
+import { defineConfig } from "vitest/config";
+
+const setupFiles = ["scripts/vitest/no-network.ts"];
+
+export default defineConfig({
+  test: {
+    projects: [
+      {
+        test: {
+          name: "server",
+          include: ["src/**/*.test.ts", "contracts/**/*.test.ts", "scripts/**/*.test.ts"],
+          environment: "node",
+          setupFiles,
+        },
+      },
+      {
+        test: {
+          name: "web",
+          include: ["web/src/**/*.test.{ts,tsx}"],
+          environment: "jsdom",
+          setupFiles,
+        },
+      },
+    ],
+    coverage: {
+      provider: "v8",
+      include: ["src/**", "contracts/**", "web/src/**"],
+      exclude: ["**/*.test.{ts,tsx}", "src/application/testing/**"],
+      thresholds: {
+        "src/domain/**": { branches: 90, lines: 90 },
+        "src/application/**": { branches: 90, lines: 90 },
+      },
+    },
+  },
+});
