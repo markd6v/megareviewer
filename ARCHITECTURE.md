@@ -34,17 +34,18 @@ The pipeline and UI never talk to a host directly. Each host is a connector behi
 |---|---|---|
 | Get PR (title, description, branch, head SHA) | `GET /repos/{o}/{r}/pulls/{n}` | `GET /2.0/repositories/{ws}/{repo}/pullrequests/{id}` |
 | Get commits | `.../pulls/{n}/commits` | `.../pullrequests/{id}/commits` |
-| Get diff (unified) | `.../compare/{base}...{head}` at the PR's SHAs, with diff media type, so a push while loading can't mismatch diff and head SHA | `.../pullrequests/{id}/diff` |
+| Get diff (unified) | `.../compare/{base}...{head}` at the PR's SHAs, with diff media type, so a push while loading can't mismatch diff and head SHA | `.../diff/{head}..{dest}?topic=true` at the PR's commits: the same three-dot diff the PR's diff endpoint redirects to, pinned the same way |
 | Get file at commit | `.../contents/{path}?ref={sha}` | `.../src/{sha}/{path}` |
-| List PRs to review | Search API (`review-requested:@me`, `author:@me`) | Per repo, filtered by reviewer and author, across the configured workspace |
+| List PRs to review | Search API (`review-requested:@me`, `author:@me`) | PRs to review: per repo, the 50 most recently updated of the configured workspace. Own PRs: one workspace-wide call |
 | Publish review | One PR review with inline comments and a verdict | Approve or request changes, plus one call per inline comment |
 
 Both hosts return a unified diff, so hunk splitting and everything after it is shared.
 
 Bitbucket specifics:
 
-- **No cross-repo "waiting for my review" search.** The picker scans the repos of the configured workspace. A pasted PR URL always works.
+- **No cross-repo "waiting for my review" search.** The picker scans the 50 most recently updated repos of the configured workspace. A pasted PR URL always works.
 - **Publishing isn't atomic.** Comments are posted one by one, so the server records each posted comment and skips it on retry, avoiding duplicates after a partial failure.
+- **Inline comments anchor on the PR's current diff,** not on a commit. Publishing refuses when the PR has new commits since the analysis, so comments can't land on the wrong lines.
 
 ## Components
 

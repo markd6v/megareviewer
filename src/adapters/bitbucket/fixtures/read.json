@@ -1,0 +1,184 @@
+[
+  {
+    "request": {
+      "method": "GET",
+      "url": "https://api.bitbucket.org/2.0/repositories/atlassian/bitbucket-upload-file/pullrequests/26",
+      "accept": "application/json"
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json; charset=utf-8"
+      },
+      "body": {
+        "id": 26,
+        "title": "PIPES-1654: Add logs and warnings about directory from upload.",
+        "description": "",
+        "summary": {
+          "raw": ""
+        },
+        "author": {
+          "uuid": "{5d6d69c0-bfad-4ee1-9e60-6af86e640907}",
+          "display_name": "user-5d6d69c0"
+        },
+        "source": {
+          "branch": {
+            "name": "feature/PIPES-1654"
+          },
+          "commit": {
+            "hash": "b467819f28a4"
+          }
+        },
+        "destination": {
+          "branch": {
+            "name": "master"
+          },
+          "commit": {
+            "hash": "9c2e7d9655b6"
+          },
+          "repository": {
+            "full_name": "atlassian/bitbucket-upload-file"
+          }
+        },
+        "links": {
+          "html": {
+            "href": "https://bitbucket.org/atlassian/bitbucket-upload-file/pull-requests/26"
+          }
+        },
+        "created_on": "2024-11-20T11:29:49.479Z",
+        "updated_on": "2024-11-21T14:51:51.177Z"
+      }
+    }
+  },
+  {
+    "request": {
+      "method": "GET",
+      "url": "https://api.bitbucket.org/2.0/repositories/atlassian/bitbucket-upload-file/diff/b467819f28a4..9c2e7d9655b6?topic=true",
+      "accept": "text/plain"
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "text/plain"
+      },
+      "body": "diff --git a/.changes/next-release/patch-20241120112812901924.json b/.changes/next-release/patch-20241120112812901924.json\nnew file mode 100644\nindex 0000000..ea3e8c0\n--- /dev/null\n+++ b/.changes/next-release/patch-20241120112812901924.json\n@@ -0,0 +1,4 @@\n+{\n+  \"type\": \"patch\",\n+  \"description\": \"Internal maintenance: Added logs and warnings about directory from upload.\"\n+}\ndiff --git a/.changes/next-release/patch-20241120112831338496.json b/.changes/next-release/patch-20241120112831338496.json\nnew file mode 100644\nindex 0000000..ae463db\n--- /dev/null\n+++ b/.changes/next-release/patch-20241120112831338496.json\n@@ -0,0 +1,4 @@\n+{\n+  \"type\": \"patch\",\n+  \"description\": \"Internal maintenance: Bump pipes versions in pipelines config file.\"\n+}\ndiff --git a/bitbucket-pipelines.yml b/bitbucket-pipelines.yml\nindex 31e757a..6a1babc 100644\n--- a/bitbucket-pipelines.yml\n+++ b/bitbucket-pipelines.yml\n@@ -1,11 +1,14 @@\n image:\n   name: python:3.10\n \n-\n test: &test\n   parallel:\n     - step:\n         name: Test\n+        size: 4x\n+        runtime:\n+          cloud:\n+            atlassian-ip-ranges: true\n         script:\n           - pip install -r requirements.txt\n           - pip install -r test/requirements.txt\n@@ -23,7 +26,7 @@ test: &test\n         script:\n           # Run a security scan for sensitive data.\n           # See more security tools at https://bitbucket.org/product/features/pipelines/integrations?&category=security\n-          - pipe: atlassian/git-secrets-scan:1.5.0\n+          - pipe: atlassian/git-secrets-scan:3.0.0\n \n \n release-dev: &release-dev\n@@ -34,7 +37,7 @@ release-dev: &release-dev\n     script:\n       - pip install semversioner\n       - VERSION=$(semversioner current-version).${BITBUCKET_BUILD_NUMBER}-dev\n-      - pipe: atlassian/bitbucket-pipe-release:5.7.0\n+      - pipe: atlassian/bitbucket-pipe-release:5.8.0\n         variables:\n           REGISTRY_USERNAME: $REGISTRY_USERNAME\n           REGISTRY_PASSWORD: $REGISTRY_PASSWORD\n@@ -52,7 +55,7 @@ push: &push\n     name: Push and Tag\n     image: python:3.10\n     script:\n-      - pipe: atlassian/bitbucket-pipe-release:5.7.0\n+      - pipe: atlassian/bitbucket-pipe-release:5.8.0\n         variables:\n           REGISTRY_USERNAME: $REGISTRY_USERNAME\n           REGISTRY_PASSWORD: $REGISTRY_PASSWORD\ndiff --git a/pipe/pipe.py b/pipe/pipe.py\nindex 958fb44..079e952 100755\n--- a/pipe/pipe.py\n+++ b/pipe/pipe.py\n@@ -43,6 +43,8 @@ class UploadFilePipe(Pipe):\n     def run(self):\n \n         self.log_info('Executing the pipe...')\n+        self.log_info(f'Current directory: {Path().absolute()}')\n+        self.log_warning(f'This pipe accepts files only from {os.environ[\"BITBUCKET_CLONE_DIR\"]} or any subfolders in this path.')\n \n         url = f\"{BITBUCKET_API_BASE_URL}/repositories/{self.account}/{self.repository}/downloads\"\n \ndiff --git a/test/test.py b/test/test.py\nindex f98e61f..71f0964 100755\n--- a/test/test.py\n+++ b/test/test.py\n@@ -28,6 +28,7 @@ class UploadFileSuccessTestCase(PipeTestCase):\n                 'ACCOUNT': ACCOUNT,\n                 'REPOSITORY': REPOSITORY,\n                 'BITBUCKET_ACCESS_TOKEN': os.getenv('BITBUCKET_ACCESS_TOKEN'),\n+                'BITBUCKET_CLONE_DIR': os.getenv('BITBUCKET_CLONE_DIR'),\n                 'FILENAME': self.filename,\n             }\n         )\n@@ -49,6 +50,7 @@ class UploadFileSuccessTestCase(PipeTestCase):\n                 'ACCOUNT': ACCOUNT,\n                 'REPOSITORY': REPOSITORY,\n                 'BITBUCKET_ACCESS_TOKEN': os.getenv('BITBUCKET_ACCESS_TOKEN'),\n+                'BITBUCKET_CLONE_DIR': os.getenv('BITBUCKET_CLONE_DIR'),\n                 'FILENAME': '*NG.md',\n             }\n         )\n@@ -88,6 +90,7 @@ class UploadFileFailTestCase(PipeTestCase):\n                 'ACCOUNT': ACCOUNT,\n                 'REPOSITORY': REPOSITORY,\n                 'BITBUCKET_ACCESS_TOKEN': os.getenv('BITBUCKET_ACCESS_TOKEN'),\n+                'BITBUCKET_CLONE_DIR': os.getenv('BITBUCKET_CLONE_DIR'),\n                 'FILENAME': filename,\n             }\n         )\n@@ -101,6 +104,7 @@ class UploadFileFailTestCase(PipeTestCase):\n                 'ACCOUNT': ACCOUNT,\n                 'REPOSITORY': 'not-exist-wrong-repo',\n                 'BITBUCKET_ACCESS_TOKEN': os.getenv('BITBUCKET_ACCESS_TOKEN'),\n+                'BITBUCKET_CLONE_DIR': os.getenv('BITBUCKET_CLONE_DIR'),\n                 'FILENAME': self.filename,\n             }\n         )\n@@ -113,6 +117,7 @@ class UploadFileFailTestCase(PipeTestCase):\n                 'ACCOUNT': 'not-exist-wrong-account',\n                 'REPOSITORY': REPOSITORY,\n                 'BITBUCKET_ACCESS_TOKEN': os.getenv('BITBUCKET_ACCESS_TOKEN'),\n+                'BITBUCKET_CLONE_DIR': os.getenv('BITBUCKET_CLONE_DIR'),\n                 'FILENAME': self.filename,\n             }\n         )\n@@ -125,6 +130,7 @@ class UploadFileFailTestCase(PipeTestCase):\n                 'ACCOUNT': ACCOUNT,\n                 'REPOSITORY': REPOSITORY,\n                 'BITBUCKET_ACCESS_TOKEN': 'wrong-token',\n+                'BITBUCKET_CLONE_DIR': os.getenv('BITBUCKET_CLONE_DIR'),\n                 'FILENAME': self.filename,\n             }\n         )\n"
+    }
+  },
+  {
+    "request": {
+      "method": "GET",
+      "url": "https://api.bitbucket.org/2.0/repositories/atlassian/bitbucket-upload-file/merge-base/b467819f28a4..9c2e7d9655b6",
+      "accept": "application/json"
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json; charset=utf-8"
+      },
+      "body": {
+        "hash": "9c2e7d9655b6ac495e905c8e20c933c8e45fa962"
+      }
+    }
+  },
+  {
+    "request": {
+      "method": "GET",
+      "url": "https://api.bitbucket.org/2.0/repositories/atlassian/bitbucket-upload-file/pullrequests/26/commits?pagelen=100",
+      "accept": "application/json"
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json; charset=utf-8"
+      },
+      "body": {
+        "values": [
+          {
+            "hash": "ddbc0ea7a71abc1de94e1cca325af8cf064de3fa",
+            "message": "Merged in feature/PIPES-1654 (pull request #26)\n\nPIPES-1654: Add logs and warnings about directory from upload.\n\nApproved-by: someone\n",
+            "author": {
+              "raw": "user-5d6d69c0",
+              "user": {
+                "uuid": "{5d6d69c0-bfad-4ee1-9e60-6af86e640907}",
+                "display_name": "user-5d6d69c0"
+              }
+            }
+          },
+          {
+            "hash": "b467819f28a4ca3cfbbdb889bd1bc7ba6918522d",
+            "message": "PIPES-1654: Add logs and warnings about directory from upload.\n",
+            "author": {
+              "raw": "user-5d6d69c0",
+              "user": {
+                "uuid": "{5d6d69c0-bfad-4ee1-9e60-6af86e640907}",
+                "display_name": "user-5d6d69c0"
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "request": {
+      "method": "GET",
+      "url": "https://api.bitbucket.org/2.0/repositories/atlassian/bitbucket-upload-file/commit/b467819f28a4",
+      "accept": "application/json"
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json; charset=utf-8"
+      },
+      "body": {
+        "hash": "b467819f28a4ca3cfbbdb889bd1bc7ba6918522d"
+      }
+    }
+  },
+  {
+    "request": {
+      "method": "GET",
+      "url": "https://api.bitbucket.org/2.0/repositories/atlassian/bitbucket-upload-file/src/b467819f28a4ca3cfbbdb889bd1bc7ba6918522d/.changes/next-release/patch-20241120112812901924.json",
+      "accept": "*/*"
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "text/plain"
+      },
+      "body": "{\n  \"type\": \"patch\",\n  \"description\": \"Internal maintenance: Added logs and warnings about directory from upload.\"\n}\n"
+    }
+  },
+  {
+    "request": {
+      "method": "GET",
+      "url": "https://api.bitbucket.org/2.0/repositories/atlassian/bitbucket-upload-file/src/b467819f28a4ca3cfbbdb889bd1bc7ba6918522d/megareviewer-missing-file.txt",
+      "accept": "*/*"
+    },
+    "response": {
+      "status": 404,
+      "headers": {
+        "content-type": "application/json; charset=utf-8"
+      },
+      "body": {
+        "error": {
+          "message": "No such file or directory: megareviewer-missing-file.txt"
+        }
+      }
+    }
+  },
+  {
+    "request": {
+      "method": "GET",
+      "url": "https://api.bitbucket.org/2.0/repositories/atlassian/bitbucket-upload-file/pullrequests/999999999",
+      "accept": "application/json"
+    },
+    "response": {
+      "status": 404,
+      "headers": {
+        "content-type": "text/plain"
+      },
+      "body": "Not Found"
+    }
+  }
+]

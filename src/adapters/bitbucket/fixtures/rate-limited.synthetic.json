@@ -1,0 +1,19 @@
+[
+  {
+    "request": {
+      "method": "GET",
+      "url": "https://api.bitbucket.org/2.0/repositories/atlassian/bitbucket-upload-file/pullrequests/26",
+      "accept": "application/json"
+    },
+    "response": {
+      "status": 429,
+      "headers": {
+        "content-type": "text/plain",
+        "x-ratelimit-limit": "60, 60;w=3600",
+        "x-ratelimit-remaining": "19",
+        "x-ratelimit-reset": "1150"
+      },
+      "body": "Rate limit for this resource has been exceeded"
+    }
+  }
+]

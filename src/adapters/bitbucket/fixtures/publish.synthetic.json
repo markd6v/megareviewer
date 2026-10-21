@@ -1,0 +1,142 @@
+[
+  {
+    "request": {
+      "method": "POST",
+      "url": "https://api.bitbucket.org/2.0/repositories/atlassian/bitbucket-upload-file/pullrequests/26/comments",
+      "accept": "application/json",
+      "body": {
+        "content": {
+          "raw": "Logging the working directory helps, but this logs it on every run."
+        },
+        "inline": {
+          "path": "pipe/pipe.py",
+          "to": 46
+        }
+      }
+    },
+    "response": {
+      "status": 201,
+      "headers": {
+        "content-type": "application/json; charset=utf-8"
+      },
+      "body": {
+        "id": 901,
+        "content": {
+          "raw": "Logging the working directory helps, but this logs it on every run."
+        },
+        "inline": {
+          "path": "pipe/pipe.py",
+          "to": 46
+        }
+      }
+    }
+  },
+  {
+    "request": {
+      "method": "POST",
+      "url": "https://api.bitbucket.org/2.0/repositories/atlassian/bitbucket-upload-file/pullrequests/26/comments",
+      "accept": "application/json",
+      "body": {
+        "content": {
+          "raw": "Was this blank line removed on purpose?"
+        },
+        "inline": {
+          "path": "bitbucket-pipelines.yml",
+          "from": 4
+        }
+      }
+    },
+    "response": {
+      "status": 201,
+      "headers": {
+        "content-type": "application/json; charset=utf-8"
+      },
+      "body": {
+        "id": 902,
+        "content": {
+          "raw": "Was this blank line removed on purpose?"
+        },
+        "inline": {
+          "path": "bitbucket-pipelines.yml",
+          "from": 4
+        }
+      }
+    }
+  },
+  {
+    "request": {
+      "method": "POST",
+      "url": "https://api.bitbucket.org/2.0/repositories/atlassian/bitbucket-upload-file/pullrequests/26/comments",
+      "accept": "application/json",
+      "body": {
+        "content": {
+          "raw": "Worth a test where BITBUCKET_CLONE_DIR is unset."
+        },
+        "inline": {
+          "path": "test/test.py",
+          "to": 31
+        }
+      }
+    },
+    "response": {
+      "status": 201,
+      "headers": {
+        "content-type": "application/json; charset=utf-8"
+      },
+      "body": {
+        "id": 903,
+        "content": {
+          "raw": "Worth a test where BITBUCKET_CLONE_DIR is unset."
+        },
+        "inline": {
+          "path": "test/test.py",
+          "to": 31
+        }
+      }
+    }
+  },
+  {
+    "request": {
+      "method": "POST",
+      "url": "https://api.bitbucket.org/2.0/repositories/atlassian/bitbucket-upload-file/pullrequests/26/comments",
+      "accept": "application/json",
+      "body": {
+        "content": {
+          "raw": "Adds useful logs; one question about the pipelines file."
+        }
+      }
+    },
+    "response": {
+      "status": 201,
+      "headers": {
+        "content-type": "application/json; charset=utf-8"
+      },
+      "body": {
+        "id": 904,
+        "content": {
+          "raw": "Adds useful logs; one question about the pipelines file."
+        }
+      }
+    }
+  },
+  {
+    "request": {
+      "method": "POST",
+      "url": "https://api.bitbucket.org/2.0/repositories/atlassian/bitbucket-upload-file/pullrequests/26/request-changes",
+      "accept": "application/json"
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json; charset=utf-8"
+      },
+      "body": {
+        "type": "participant",
+        "role": "REVIEWER",
+        "approved": false,
+        "state": "changes_requested",
+        "participated_on": "2026-01-01T00:00:05.000000+00:00"
+      }
+    }
+  }
+]

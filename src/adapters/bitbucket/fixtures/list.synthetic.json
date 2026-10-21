@@ -1,0 +1,207 @@
+[
+  {
+    "request": {
+      "method": "GET",
+      "url": "https://api.bitbucket.org/2.0/user",
+      "accept": "application/json"
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json; charset=utf-8"
+      },
+      "body": {
+        "uuid": "{8d3c1a52-6f0e-4a8b-9a51-2f4c7e0b9d13}",
+        "display_name": "Grace Hopper"
+      }
+    }
+  },
+  {
+    "request": {
+      "method": "GET",
+      "url": "https://api.bitbucket.org/2.0/repositories/acme?role=member&sort=-updated_on&pagelen=50",
+      "accept": "application/json"
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json; charset=utf-8"
+      },
+      "body": {
+        "values": [
+          {
+            "slug": "Web-App"
+          },
+          {
+            "slug": "api"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "request": {
+      "method": "GET",
+      "url": "https://api.bitbucket.org/2.0/repositories/acme/Web-App/pullrequests?q=state%3D%22OPEN%22+AND+reviewers.uuid%3D%22%7B8d3c1a52-6f0e-4a8b-9a51-2f4c7e0b9d13%7D%22&sort=-updated_on&pagelen=50",
+      "accept": "application/json"
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json; charset=utf-8"
+      },
+      "body": {
+        "values": [
+          {
+            "id": 42,
+            "title": "Add the checkout page",
+            "description": "",
+            "summary": {
+              "raw": ""
+            },
+            "author": {
+              "uuid": "{2b7e9f04-1c3d-4e5f-8a6b-7c8d9e0f1a2b}",
+              "display_name": "Ada Lovelace"
+            },
+            "source": {
+              "branch": {
+                "name": "feature/42"
+              },
+              "commit": {
+                "hash": "0123456789ab"
+              }
+            },
+            "destination": {
+              "branch": {
+                "name": "main"
+              },
+              "commit": {
+                "hash": "ba9876543210"
+              },
+              "repository": {
+                "full_name": "acme/Web-App"
+              }
+            },
+            "links": {
+              "html": {
+                "href": "https://bitbucket.org/acme/Web-App/pull-requests/42"
+              }
+            },
+            "created_on": "2025-12-01T09:00:00.000Z",
+            "updated_on": "2026-01-02T10:00:00.000Z"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "request": {
+      "method": "GET",
+      "url": "https://api.bitbucket.org/2.0/repositories/acme/api/pullrequests?q=state%3D%22OPEN%22+AND+reviewers.uuid%3D%22%7B8d3c1a52-6f0e-4a8b-9a51-2f4c7e0b9d13%7D%22&sort=-updated_on&pagelen=50",
+      "accept": "application/json"
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json; charset=utf-8"
+      },
+      "body": {
+        "values": [
+          {
+            "id": 7,
+            "title": "Retry failed webhooks",
+            "description": "",
+            "summary": {
+              "raw": ""
+            },
+            "author": {
+              "uuid": "{2b7e9f04-1c3d-4e5f-8a6b-7c8d9e0f1a2b}",
+              "display_name": "Ada Lovelace"
+            },
+            "source": {
+              "branch": {
+                "name": "feature/7"
+              },
+              "commit": {
+                "hash": "0123456789ab"
+              }
+            },
+            "destination": {
+              "branch": {
+                "name": "main"
+              },
+              "commit": {
+                "hash": "ba9876543210"
+              },
+              "repository": {
+                "full_name": "acme/api"
+              }
+            },
+            "links": {
+              "html": {
+                "href": "https://bitbucket.org/acme/api/pull-requests/7"
+              }
+            },
+            "created_on": "2025-12-01T09:00:00.000Z",
+            "updated_on": "2025-12-30T08:15:00.000Z"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "request": {
+      "method": "GET",
+      "url": "https://api.bitbucket.org/2.0/workspaces/acme/pullrequests/%7B8d3c1a52-6f0e-4a8b-9a51-2f4c7e0b9d13%7D?state=OPEN&pagelen=50",
+      "accept": "application/json"
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json; charset=utf-8"
+      },
+      "body": {
+        "values": [
+          {
+            "id": 3,
+            "title": "Document the release process",
+            "description": "",
+            "summary": {
+              "raw": ""
+            },
+            "author": {
+              "uuid": "{8d3c1a52-6f0e-4a8b-9a51-2f4c7e0b9d13}",
+              "display_name": "Grace Hopper"
+            },
+            "source": {
+              "branch": {
+                "name": "feature/3"
+              },
+              "commit": {
+                "hash": "0123456789ab"
+              }
+            },
+            "destination": {
+              "branch": {
+                "name": "main"
+              },
+              "commit": {
+                "hash": "ba9876543210"
+              },
+              "repository": {
+                "full_name": "acme/docs"
+              }
+            },
+            "links": {
+              "html": {
+                "href": "https://bitbucket.org/acme/docs/pull-requests/3"
+              }
+            },
+            "created_on": "2025-12-01T09:00:00.000Z",
+            "updated_on": "2025-12-31T12:00:00.000Z"
+          }
+        ]
+      }
+    }
+  }
+]
