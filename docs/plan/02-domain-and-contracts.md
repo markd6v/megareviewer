@@ -1,6 +1,6 @@
 # Stage 02: Domain model, ports and contracts
 
-**Status:** Not started
+**Status:** In progress (on main; CI not yet confirmed)
 **Depends on:** 01
 **Unblocks:** 03–09, 13, 14 (and through them, everything)
 **Owns:** `src/domain/review/`, `src/domain/diff/types.ts`, `src/domain/shared/hash.ts`, `src/application/ports/`, `src/application/testing/`, `contracts/`
@@ -360,10 +360,10 @@ Export a typed route table (method, path, request schema, response schema) so th
 
 ## Definition of done
 
-- [ ] All types, functions, ports, fakes, fixtures, contract suites and API contracts above exist and are exported from their folder's `index.ts`.
-- [ ] Fakes pass their contract suites.
-- [ ] Coverage thresholds pass for `src/domain` and `src/application`.
-- [ ] Fixture diffs are real `git diff` output.
+- [x] All types, functions, ports, fakes, fixtures, contract suites and API contracts above exist and are exported from their folder's `index.ts`.
+- [x] Fakes pass their contract suites.
+- [x] Coverage thresholds pass for `src/domain` and `src/application`.
+- [x] Fixture diffs are real `git diff` output.
 
 ## Change log
 
@@ -377,4 +377,15 @@ _None yet._
 
 ## Notes for later stages
 
-_None yet._
+Where the code differs from or adds to this doc:
+
+- **Shared values.** `Timestamp` is UTC ISO-8601 ending in `Z`, so timestamps sort as strings: adapters convert host timestamps with offsets (Bitbucket's) with `new Date(x).toISOString()`. `HttpUrl` (PR, ticket and receipt URLs) only accepts http(s), because the UI renders them as links. `Sha` is 40 lowercase hex chars. All three are exported from `src/domain/review/`.
+- **IDs are validated.** `HunkId`, `DecisionId`, `TourStepId`, `AnalysisId` and `CommentKey` are branded and checked by regex; create them with `.parse(...)`.
+- **`parsePullRequestUrl` lowercases owner and repo**, so one PR maps to one analysis however its URL was typed. The GitHost contract checks that `getPullRequest` returns exactly the requested `ref`, so adapters echo it rather than copying the host's casing.
+- **Publishing.** The summary is a post with key `summary`, before the inline comments. `onPosted` is called for every key the call posts, and `PublicationReceipt.postedCommentIds` lists only those keys, not ones in `alreadyPosted`. `GitHostContractSetup.publishablePr` is `{ ref, headSha }`, not a bare ref, because `publish` needs the head SHA.
+- **Contract suite signatures.** `describeTicketSourceContract(name, { configured?, unconfigured? })` takes an object, not a setup function, so the unconfigured Jira source can run only its part. `describeAnalysisStoreContract(name, createStore)` and `describeAnalysisModelContract(name, createModel)` take factories (the store's may be async). The model suite gives each pass the fixture's own intent, risk and decisions instead of chaining this model's outputs, so each request is the same on every run and can be recorded once.
+- **Fixtures.** Each is a `PullRequestFixture` (`name`, `pullRequest`, `baseFiles`, `headFiles`, `tickets`; files only for paths the PR changes), listed in `allFixtures`. A test rebuilds every diff with `git diff -M` from the base and head files, so to change a fixture, edit its files and paste the diff from the failure message. small-feature also exports `smallFeatureFiles` (parsed `FileChange[]`, built with the `hunk()` builder using stage 03's hunk ID scheme), `smallFeatureInput`, `smallFeatureIntent`, a complete `smallFeatureAnalysis` and `smallFeaturePublication`. Stage 03: parsing small-feature's diff should give exactly `smallFeatureFiles`, apart from `language`, which the parser leaves null. A mismatch is a bug on one side.
+- **Fakes.** `FakeGitHost` serves only fixtures for its own host, so `allFixtures` can seed both, and defaults its user to `fixtureReviewers[host]`, who is a reviewer on every fixture PR. Scripted failures: `failNext(method, error)` (queued per method), `failAlways(error | null)`, `failPublishAtPost(n, error)` (the summary is post 1). `setHeadSha` simulates a push; `publishAttempts` records what it received. `FakeAnalysisModel` takes `script(pass, ...results)`, `maxInputTokens` for size tests, and records `calls`.
+- **Validation.** `TourProblem` and `RiskProblem` are both `CoverageProblem`. A mechanical hunk in a tour or risk answer is reported as `unknown`. Each problem hunk is reported once.
+- **HTTP contract.** Routes carry a `params` schema too, so path params parse into domain IDs. `routePath(path, params)` fills paths for the web client. The events endpoint is `analysisEventsRoute`, with payload schemas `AnalysisUpdatedEvent` and `AnalysisDoneEvent` (`{}`). `ERROR_STATUS` maps each `ErrorCode` to its HTTP status.
+- **Outside this stage's paths:** `src/domain/diff/index.ts` (stage 03's) now exports the diff types; stages 03 and 04 append to it. `.dependency-cruiser.cjs` (stage 01's) lets `src/application/testing/contracts/` import Vitest and nothing else new.
