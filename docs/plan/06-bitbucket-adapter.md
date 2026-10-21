@@ -86,15 +86,31 @@ Same kinds as GitHub (stage 05 table), with Bitbucket's statuses: 401 `unauthori
 
 ## Definition of done
 
-- [ ] Contract suite passes.
-- [ ] Every endpoint was checked against current docs; differences are recorded.
-- [ ] Partial-failure publish behavior is tested.
-- [ ] Fixtures contain no tokens or personal data.
+- [x] Contract suite passes.
+- [x] Every endpoint was checked against current docs; differences are recorded.
+- [x] Partial-failure publish behavior is tested.
+- [x] Fixtures contain no tokens or personal data.
 
 ## Open issues
 
-_None yet._
+- **Synthetic fixtures** (see `src/adapters/bitbucket/fixtures/PROVENANCE.md`): `/user`, listing, publishing, 401 and 429. The token available while building had only read scopes and no `read:user`. Publishing fixtures need a sandbox repo the user owns, a token with `write:pullrequest:bitbucket`, and their go-ahead. Until then these are unverified: what approving an already-approved PR returns (mapped to `rejected` if it's a 409 or 400), whether `request-changes` on one's own PR is refused, and whether the comment endpoint needs the write scope (the spec lists only read).
+- **No live `too-large` case.** The docs say the diff endpoint answers 555 when it times out on a huge diff; that's what's mapped. Not seen live.
 
 ## Notes for later stages
 
-_None yet._
+Where the code differs from or adds to this doc. Endpoints were checked against Bitbucket's OpenAPI spec (`https://api.bitbucket.org/swagger.json`) and live calls on public repos.
+
+- **Options** are `{ email, apiToken, workspace, clock, logger, fetch? }`. Stage 12 passes a `Clock`, used for receipts (Bitbucket gives no publish time).
+- **The diff comes from `GET /repositories/{ws}/{repo}/diff/{head}..{dest}?topic=true`** at the PR object's commits, not from `…/pullrequests/{id}/diff`. That endpoint only redirects to the same diff (`/diff/{ws}/{repo}:{head}%0D{dest}?topic=true`) for the PR's current commits, so a push between the two calls would mismatch the diff and `headSha`. Byte-identical on #26. Fork PRs work: fork commits resolve in the destination repo (checked on atlassian/atlassian-connect-express#509), and so do `getFile` calls at a fork's head.
+- **Redirects** are followed by the adapter (`redirect: "manual"`, at most 5 hops), sending credentials only to `api.bitbucket.org`. The PR diff no longer needs it; LFS files do (`src` redirects them to Atlassian's media service).
+- **A PR whose source branch or fork was deleted** has `source.commit: null`. `getPullRequest` returns `not-found` saying so.
+- **Merge-base fallback** to the destination commit happens on `not-found`, `unexpected` and `invalid-response`, with a warning. On `unauthorized`, `forbidden`, `rate-limited` and `network` the error is returned, since every other call would fail the same way.
+- **Listing differs from this doc.** The PR list ignores `state` once `q` is set, so the state goes in the query. And `reviewers.uuid="…" OR author.uuid="…"` returns each PR once per reviewer (15 rows for 6 PRs, live). So:
+  - PRs to review: `GET /repositories/{ws}?role=member&sort=-updated_on&pagelen=50` (first page), then per repo `…/pullrequests?q=state="OPEN" AND reviewers.uuid="{uuid}"`, 5 at a time. One info log line says it scans only those repos.
+  - Own PRs: one `GET /workspaces/{ws}/pullrequests/{uuid}?state=OPEN`, which covers every repo of the workspace.
+  - Any failing call fails the listing.
+- **Publishing** checks the PR's head first: Bitbucket anchors inline comments on the PR's current diff, not on a commit, so if `headSha` isn't the PR's head any more it returns `rejected` without posting. Then comments, then the summary, then the verdict. An empty (whitespace-only) summary isn't posted, so it has no receipt entry. The verdict isn't tracked by a key: a retry always sends it again. The receipt's `url` is the PR's canonical URL.
+- **Errors beyond the table.** A 429 has no `retry-after`; live it carried `x-ratelimit-reset` as seconds until the reset, which is used, else 60. 409 on publishing calls is `rejected` too; 400 or 409 on reads is `unexpected`. A 403 for missing scopes names them (`Needed: read:user:bitbucket.`). Some errors have plain-text bodies (a missing PR's 404 is `Not Found`); HTML or long bodies are left out of messages. A `fetch` that throws anything but a `TypeError` is a bug and is rethrown.
+- **Mapping.** `description` is `description`, else `summary.raw`, else `""`. A missing author is `{ id: "former-user", name: "Former user" }`. A commit's `author` is the git author's name without the email, else the account's display name, else `""`. Summaries' workspace and repo are lowercased; their `url` keeps Bitbucket's casing. A merged PR's commit list includes the merge commit.
+- **Token scopes:** `read:user:bitbucket`, `read:repository:bitbucket`, `read:pullrequest:bitbucket`, `write:pullrequest:bitbucket`. Stage 17 copies them from the fixture folder's provenance note.
+- **Recorder** needs Node 24 (it's run as `.ts`). It records only the PR's reads, not `/user` or the listing (they'd capture the token owner's account and workspace).
