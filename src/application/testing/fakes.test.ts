@@ -1,0 +1,307 @@
+import { describe, expect, it } from "vitest";
+import {
+  type CommentKey,
+  type HostError,
+  type Publication,
+  validateRiskCoverage,
+  validateTour,
+} from "../../domain/review/index.ts";
+import { err, ok } from "../../domain/shared/index.ts";
+import type { AnalysisInput } from "../ports/index.ts";
+import {
+  allFixtures,
+  bitbucketBugfix,
+  describeAnalysisModelContract,
+  describeAnalysisStoreContract,
+  describeGitHostContract,
+  describeTicketSourceContract,
+  FakeAnalysisModel,
+  FakeGitHost,
+  FakeTicketSource,
+  FixedClock,
+  InMemoryAnalysisStore,
+  RecordingLogger,
+  smallFeature,
+  smallFeatureInput,
+  smallFeatureIntent,
+  smallFeaturePublication,
+} from "./index.ts";
+
+const unauthorized: HostError = {
+  kind: "unauthorized",
+  message: "Bad credentials",
+  retryAfterSeconds: null,
+};
+const rateLimited: HostError = {
+  kind: "rate-limited",
+  message: "API rate limit exceeded",
+  retryAfterSeconds: 60,
+};
+const network: HostError = { kind: "network", message: "socket hang up", retryAfterSeconds: null };
+
+const scenarioHost = (host: "github" | "bitbucket") => (scenario: string) => {
+  const fake = new FakeGitHost({ host, fixtures: allFixtures });
+  if (scenario === "unauthorized") fake.failAlways(unauthorized);
+  if (scenario === "rate-limited") fake.failAlways(rateLimited);
+  return fake;
+};
+
+describeGitHostContract("fake github", () => {
+  const { ref, headSha, baseSha } = smallFeature.pullRequest;
+  return {
+    host: scenarioHost("github"),
+    existingPr: ref,
+    missingPr: { ...ref, number: 999 },
+    existingFile: { repo: ref.repo, sha: headSha, path: "src/services/receipts.ts" },
+    missingFile: { repo: ref.repo, sha: baseSha, path: "src/services/receipts.ts" },
+    publishablePr: { ref, headSha },
+    publication: smallFeaturePublication,
+  };
+});
+
+describeGitHostContract("fake bitbucket", () => {
+  const { ref, headSha, baseSha } = bitbucketBugfix.pullRequest;
+  return {
+    host: scenarioHost("bitbucket"),
+    existingPr: ref,
+    missingPr: { ...ref, number: 999 },
+    existingFile: { repo: ref.repo, sha: baseSha, path: "src/refunds.ts" },
+    missingFile: { repo: ref.repo, sha: baseSha, path: "src/refunds.test.ts" },
+    publishablePr: { ref, headSha },
+    publication: { verdict: "approve", summary: "Looks good.", comments: [] },
+  };
+});
+
+describeTicketSourceContract("fake", {
+  configured: {
+    source: (scenario) => {
+      const source = new FakeTicketSource({ tickets: allFixtures.flatMap((f) => f.tickets) });
+      if (scenario === "unauthorized") {
+        source.failNext({ kind: "unauthorized", message: "401 Unauthorized" });
+      }
+      return source;
+    },
+    existingKeys: ["SHOP-123", "PAY-42"],
+    missingKeys: ["NOPE-1"],
+  },
+  unconfigured: () => new FakeTicketSource({ configured: false }),
+});
+
+describeAnalysisStoreContract("in-memory", () => new InMemoryAnalysisStore());
+
+describeAnalysisModelContract("fake", () => new FakeAnalysisModel());
+
+describe("FakeGitHost", () => {
+  const { ref } = smallFeature.pullRequest;
+  const publishOptions = (alreadyPosted: CommentKey[] = []) => {
+    const posted: CommentKey[] = [];
+    return {
+      posted,
+      options: {
+        headSha: smallFeature.pullRequest.headSha,
+        alreadyPosted: new Set(alreadyPosted),
+        onPosted: async (key: CommentKey) => {
+          posted.push(key);
+        },
+      },
+    };
+  };
+
+  it("only serves fixtures for its own host", async () => {
+    const host = new FakeGitHost({ host: "github", fixtures: allFixtures });
+    const result = await host.getPullRequest(bitbucketBugfix.pullRequest.ref);
+    expect(!result.ok && result.error.kind).toBe("not-found");
+  });
+
+  it("fails the next call to one method, once, in order", async () => {
+    const host = new FakeGitHost({ host: "github", fixtures: allFixtures });
+    host.failNext("getPullRequest", network);
+    host.failNext("getPullRequest", rateLimited);
+
+    expect(await host.getPullRequest(ref)).toEqual(err(network));
+    expect((await host.currentUser()).ok).toBe(true);
+    expect(await host.getPullRequest(ref)).toEqual(err(rateLimited));
+    expect((await host.getPullRequest(ref)).ok).toBe(true);
+  });
+
+  it("stops failing every call when failAlways is cleared", async () => {
+    const host = new FakeGitHost({ host: "github", fixtures: allFixtures });
+    host.failAlways(unauthorized);
+    expect(await host.listPullRequests()).toEqual(err(unauthorized));
+    host.failAlways(null);
+    expect((await host.listPullRequests()).ok).toBe(true);
+  });
+
+  it("fails a publish part way, and a retry posts only the rest", async () => {
+    const host = new FakeGitHost({ host: "github", fixtures: allFixtures });
+    host.failPublishAtPost(2, network);
+
+    const first = publishOptions();
+    expect(await host.publish(ref, smallFeaturePublication, first.options)).toEqual(err(network));
+    expect(first.posted).toEqual(["summary"]);
+
+    const retry = publishOptions(first.posted);
+    const result = await host.publish(ref, smallFeaturePublication, retry.options);
+    expect(result.ok).toBe(true);
+    expect(retry.posted).toEqual(["decision:d3"]);
+    expect(host.publishAttempts.map((attempt) => [attempt.outcome, attempt.postedKeys])).toEqual([
+      ["failed", ["summary"]],
+      ["published", ["decision:d3"]],
+    ]);
+  });
+
+  it("stamps receipts with its clock", async () => {
+    const clock = new FixedClock("2026-10-21T10:00:00Z");
+    const host = new FakeGitHost({ host: "github", fixtures: allFixtures, clock });
+    const result = await host.publish(ref, smallFeaturePublication, publishOptions().options);
+    expect(result.ok && result.value.publishedAt).toBe("2026-10-21T10:00:00.000Z");
+  });
+
+  it("returns not-found when publishing to an unknown PR", async () => {
+    const host = new FakeGitHost({ host: "github" });
+    const publication: Publication = { verdict: "comment", summary: "", comments: [] };
+    const result = await host.publish(ref, publication, publishOptions().options);
+    expect(!result.ok && result.error.kind).toBe("not-found");
+  });
+
+  it("moves a PR to a new head SHA, keeping its head files", async () => {
+    const host = new FakeGitHost({ host: "github", fixtures: allFixtures });
+    const newSha = "f".repeat(40);
+    host.setHeadSha(ref, newSha);
+
+    const result = await host.getPullRequest(ref);
+    expect(result.ok && result.value.headSha).toBe(newSha);
+    expect(await host.getFile(ref.repo, newSha, "src/services/receipts.ts")).toEqual(
+      ok(smallFeature.headFiles["src/services/receipts.ts"]),
+    );
+    expect(() => host.setHeadSha({ ...ref, number: 999 }, newSha)).toThrow();
+  });
+
+  it("returns not-found for an unknown commit", async () => {
+    const host = new FakeGitHost({ host: "github", fixtures: allFixtures });
+    const result = await host.getFile(ref.repo, "0".repeat(40), "README.md");
+    expect(!result.ok && result.error.kind).toBe("not-found");
+  });
+
+  it("lists PRs by the current user as authored", async () => {
+    const host = new FakeGitHost({
+      host: "github",
+      user: smallFeature.pullRequest.author,
+      fixtures: allFixtures,
+    });
+    const result = await host.listPullRequests();
+    const roles = result.ok
+      ? result.value.map((summary) => [summary.ref.number, summary.role])
+      : [];
+    expect(roles).toEqual([
+      [101, "author"],
+      [102, "author"],
+      [103, "reviewer"],
+    ]);
+  });
+});
+
+describe("FakeTicketSource", () => {
+  it("records calls and answers each requested key once", async () => {
+    const source = new FakeTicketSource({ tickets: smallFeature.tickets });
+    const result = await source.getTickets(["SHOP-123", "SHOP-123", "SHOP-9"]);
+
+    expect(result.ok && result.value.found.map((ticket) => ticket.key)).toEqual(["SHOP-123"]);
+    expect(result.ok && result.value.missing).toEqual(["SHOP-9"]);
+    expect(source.calls).toEqual([["SHOP-123", "SHOP-123", "SHOP-9"]]);
+  });
+});
+
+describe("FakeAnalysisModel", () => {
+  const required = new Set(smallFeatureInput.files.flatMap((f) => f.hunks.map((h) => h.id)));
+
+  it("derives outputs that pass validation", async () => {
+    const model = new FakeAnalysisModel();
+    const risk = await model.risk(smallFeatureInput, smallFeatureIntent);
+    const decisions = await model.decisions(smallFeatureInput, smallFeatureIntent);
+    const tour = await model.tour(smallFeatureInput, smallFeatureIntent, [], []);
+
+    expect(risk.ok && validateRiskCoverage(risk.value.value, required)).toEqual([]);
+    expect(decisions.ok && decisions.value.value.map((d) => d.title)).toEqual([
+      "Changes config/app.yaml",
+      "Changes src/routes/orders.ts",
+      "Changes src/services/receipts.ts",
+    ]);
+    expect(tour.ok && validateTour(tour.value.value, required)).toEqual([]);
+  });
+
+  it("leaves out files whose hunks are all mechanical", async () => {
+    const [first, ...rest] = smallFeatureInput.files;
+    if (first === undefined) throw new Error("fixture has no files");
+    const input: AnalysisInput = {
+      ...smallFeatureInput,
+      files: [{ ...first, mechanical: true, hunks: [] }, ...rest],
+    };
+    const tour = await new FakeAnalysisModel().tour(input, smallFeatureIntent, [], []);
+    expect(tour.ok && tour.value.value.steps.map((step) => step.title)).toEqual([
+      "src/routes/orders.ts",
+      "src/services/receipts.ts",
+    ]);
+  });
+
+  it("has no stated intent without a description or tickets", async () => {
+    const input: AnalysisInput = {
+      ...smallFeatureInput,
+      pullRequest: { ...smallFeatureInput.pullRequest, description: "  " },
+      tickets: [],
+    };
+    const result = await new FakeAnalysisModel().intent(input);
+    expect(result.ok && result.value.value.stated).toBeNull();
+  });
+
+  it("answers from the script first, in order, then derives", async () => {
+    const model = new FakeAnalysisModel();
+    const overloaded = { kind: "overloaded" as const, message: "529" };
+    model.script("risk", err(overloaded), ok([]));
+
+    expect(await model.risk(smallFeatureInput, smallFeatureIntent)).toEqual(err(overloaded));
+    const scripted = await model.risk(smallFeatureInput, smallFeatureIntent, {
+      feedback: ["missing h_1"],
+    });
+    expect(scripted.ok && scripted.value.value).toEqual([]);
+    const derived = await model.risk(smallFeatureInput, smallFeatureIntent);
+    expect(derived.ok && derived.value.value).toHaveLength(required.size);
+
+    expect(model.callsTo("risk").map((call) => call.options)).toEqual([
+      undefined,
+      { feedback: ["missing h_1"] },
+      undefined,
+    ]);
+  });
+
+  it("fails checkSize over its token limit", async () => {
+    const model = new FakeAnalysisModel({ maxInputTokens: 10 });
+    const result = await model.checkSize(smallFeatureInput);
+    expect(!result.ok && result.error.kind).toBe("too-large");
+  });
+});
+
+describe("FixedClock", () => {
+  it("returns the set time and advances", () => {
+    const clock = new FixedClock("2026-10-21T10:00:00Z");
+    expect(clock.now()).toBe("2026-10-21T10:00:00.000Z");
+    clock.advance(1500);
+    expect(clock.now()).toBe("2026-10-21T10:00:01.500Z");
+  });
+});
+
+describe("RecordingLogger", () => {
+  it("keeps every entry", () => {
+    const logger = new RecordingLogger();
+    logger.debug("a");
+    logger.info("b", { n: 1 });
+    logger.warn("c");
+    logger.error("d");
+    expect(logger.entries.map((entry) => [entry.level, entry.message, entry.fields])).toEqual([
+      ["debug", "a", undefined],
+      ["info", "b", { n: 1 }],
+      ["warn", "c", undefined],
+      ["error", "d", undefined],
+    ]);
+  });
+});

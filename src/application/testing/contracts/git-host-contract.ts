@@ -1,0 +1,140 @@
+import { beforeEach, describe, expect, it } from "vitest";
+import {
+  CommentKey,
+  HostUser,
+  type Publication,
+  PublicationReceipt,
+  PullRequest,
+  type PullRequestRef,
+  PullRequestSummary,
+  type RepoRef,
+} from "../../../domain/review/index.ts";
+import type { GitHost, PublishOptions } from "../../ports/index.ts";
+
+export interface GitHostContractSetup {
+  host(scenario: "ok" | "unauthorized" | "rate-limited"): GitHost;
+  existingPr: PullRequestRef;
+  missingPr: PullRequestRef;
+  existingFile: { repo: RepoRef; sha: string; path: string };
+  missingFile: { repo: RepoRef; sha: string; path: string };
+  /** A PR with headSha, where every comment of `publication` anchors on a line in the diff. */
+  publishablePr: { ref: PullRequestRef; headSha: string };
+  publication: Publication;
+}
+
+const recordingOptions = (
+  headSha: string,
+  alreadyPosted: readonly CommentKey[] = [],
+): PublishOptions & { posted: [CommentKey, string][] } => {
+  const posted: [CommentKey, string][] = [];
+  return {
+    headSha,
+    alreadyPosted: new Set(alreadyPosted),
+    onPosted: async (key, hostCommentId) => {
+      posted.push([key, hostCommentId]);
+    },
+    posted,
+  };
+};
+
+/** Every GitHost implementation must pass this suite. */
+export const describeGitHostContract = (name: string, setup: () => GitHostContractSetup): void => {
+  describe(`GitHost contract: ${name}`, () => {
+    let s: GitHostContractSetup;
+    beforeEach(() => {
+      s = setup();
+    });
+
+    it("returns the current user", async () => {
+      const result = await s.host("ok").currentUser();
+      if (!result.ok) throw new Error(`currentUser failed: ${result.error.message}`);
+      expect(HostUser.parse(result.value)).toEqual(result.value);
+    });
+
+    it("gets an existing PR in domain shape", async () => {
+      const result = await s.host("ok").getPullRequest(s.existingPr);
+      if (!result.ok) throw new Error(`getPullRequest failed: ${result.error.message}`);
+      const pullRequest = result.value;
+
+      expect(PullRequest.parse(pullRequest)).toEqual(pullRequest);
+      expect(pullRequest.ref).toEqual(s.existingPr);
+      expect(pullRequest.baseSha).toMatch(/^[0-9a-f]{40}$/);
+      expect(pullRequest.headSha).toMatch(/^[0-9a-f]{40}$/);
+      expect(pullRequest.baseSha).not.toBe(pullRequest.headSha);
+      expect(pullRequest.diff).not.toBe("");
+    });
+
+    it("returns not-found for a missing PR", async () => {
+      const result = await s.host("ok").getPullRequest(s.missingPr);
+      expect(!result.ok && result.error.kind).toBe("not-found");
+    });
+
+    it("returns a file's content at a commit", async () => {
+      const { repo, sha, path } = s.existingFile;
+      const result = await s.host("ok").getFile(repo, sha, path);
+      expect(result.ok && typeof result.value).toBe("string");
+    });
+
+    it("returns ok(null) for a file that isn't at the commit", async () => {
+      const { repo, sha, path } = s.missingFile;
+      expect(await s.host("ok").getFile(repo, sha, path)).toEqual({ ok: true, value: null });
+    });
+
+    it("lists PRs as valid summaries", async () => {
+      const host = s.host("ok");
+      const result = await host.listPullRequests();
+      if (!result.ok) throw new Error(`listPullRequests failed: ${result.error.message}`);
+
+      for (const summary of result.value) {
+        expect(PullRequestSummary.parse(summary)).toEqual(summary);
+        expect(summary.ref.repo.host).toBe(host.host);
+      }
+    });
+
+    it("publishes, calling onPosted once per posted key", async () => {
+      const options = recordingOptions(s.publishablePr.headSha);
+      const result = await s.host("ok").publish(s.publishablePr.ref, s.publication, options);
+      if (!result.ok) throw new Error(`publish failed: ${result.error.message}`);
+
+      const expectedKeys = ["summary", ...s.publication.comments.map((comment) => comment.key)];
+      expect(options.posted.map(([key]) => key).sort()).toEqual(expectedKeys.sort());
+      expect(PublicationReceipt.parse(result.value)).toEqual(result.value);
+      expect(result.value.postedCommentIds).toEqual(Object.fromEntries(options.posted));
+    });
+
+    it("skips keys already posted", async () => {
+      const skipped = s.publication.comments[0]?.key ?? CommentKey.parse("summary");
+      const options = recordingOptions(s.publishablePr.headSha, [skipped]);
+      const result = await s.host("ok").publish(s.publishablePr.ref, s.publication, options);
+
+      expect(result.ok).toBe(true);
+      expect(options.posted.map(([key]) => key)).not.toContain(skipped);
+      expect(result.ok && Object.keys(result.value.postedCommentIds)).not.toContain(skipped);
+    });
+
+    it("returns unauthorized from every method when the credentials are rejected", async () => {
+      const host = s.host("unauthorized");
+      const options = recordingOptions(s.publishablePr.headSha);
+      const results = [
+        await host.currentUser(),
+        await host.getPullRequest(s.existingPr),
+        await host.getFile(s.existingFile.repo, s.existingFile.sha, s.existingFile.path),
+        await host.listPullRequests(),
+        await host.publish(s.publishablePr.ref, s.publication, options),
+      ];
+
+      expect(results.map((result) => !result.ok && result.error.kind)).toEqual(
+        results.map(() => "unauthorized"),
+      );
+      expect(options.posted).toEqual([]);
+    });
+
+    it("returns rate-limited with a retry delay", async () => {
+      const result = await s.host("rate-limited").getPullRequest(s.existingPr);
+      if (result.ok) throw new Error("expected rate-limited");
+
+      expect(result.error.kind).toBe("rate-limited");
+      expect(result.error.retryAfterSeconds).toBeGreaterThanOrEqual(0);
+    });
+  });
+};

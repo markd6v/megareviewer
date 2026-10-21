@@ -3,6 +3,8 @@
 const TEST_FILE = "\\.test\\.tsx?$";
 // Unanchored, because pnpm resolves packages to node_modules/.pnpm/<name>@<version>/node_modules/<name>/.
 const ZOD = "node_modules/zod/";
+const VITEST = "node_modules/vitest/";
+const CONTRACT_SUITES = "^src/application/testing/contracts/";
 const MODULE = "src/(?:domain|application|adapters)/[^/]+";
 
 /** @type {import("dependency-cruiser").IConfiguration} */
@@ -19,8 +21,15 @@ module.exports = {
       name: "application-depends-on-domain",
       comment: "Use cases reach the outside world only through ports.",
       severity: "error",
-      from: { path: "^src/application/", pathNot: TEST_FILE },
+      from: { path: "^src/application/", pathNot: [TEST_FILE, CONTRACT_SUITES] },
       to: { pathNot: [`^src/(domain|application)/`, ZOD] },
+    },
+    {
+      name: "contract-suites-depend-on-domain",
+      comment: "Port contract suites register Vitest tests, which adapters' tests run.",
+      severity: "error",
+      from: { path: CONTRACT_SUITES },
+      to: { pathNot: [`^src/(domain|application)/`, ZOD, VITEST] },
     },
     {
       name: "adapters-are-isolated",
