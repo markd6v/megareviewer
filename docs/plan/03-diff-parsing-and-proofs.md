@@ -1,6 +1,6 @@
 # Stage 03: Diff parsing and mechanical proofs
 
-**Status:** Not started
+**Status:** In progress (on main; CI not yet confirmed)
 **Depends on:** 02
 **Unblocks:** 10
 **Owns:** `src/domain/diff/` except `types.ts` (stage 02), `formatting.ts` and `call-graph.ts` (stage 04)
@@ -141,15 +141,31 @@ And positive cases for each proof kind, including a function moved between two f
 
 ## Definition of done
 
-- [ ] Parser handles every input in the table, tested with real git output.
-- [ ] Every adversarial case above has a test and is not proved.
-- [ ] Coverage thresholds pass (this is domain code: 90% branches).
-- [ ] `scripts/make-diff-fixtures.sh` regenerates the fixtures.
+- [x] Parser handles every input in the table, tested with real git output.
+- [x] Every adversarial case above has a test and is not proved.
+- [x] Coverage thresholds pass (this is domain code: 90% branches).
+- [x] `scripts/make-diff-fixtures.sh` regenerates the fixtures.
 
 ## Open issues
 
-_None yet._
+- **Moves within one file can reorder statements.** A block moved between two hunks of the same file gets a move proof, as this doc asks, but moving lines inside a long function changes the order they run in. Stage 04 could require a moved region to be whole top-level declarations.
+- **Indentation-insensitive moves ignore indentation inside multi-line strings** (template literals, raw strings), which does change the string. The detail says "identical apart from indentation", but the hunk is still collapsed.
+- **Only the root `.gitattributes` is read.** A nested one that unsets `linguist-generated` is ignored, so such a file could be proved generated when git wouldn't mark it.
 
 ## Notes for later stages
 
-_None yet._
+Where the code differs from or adds to this doc:
+
+- **Stricter than the doc, so fewer proofs:**
+  - A moved region needs 3 lines with a letter or digit, not just 3 non-blank lines, so `}` and `);` don't count towards the minimum. Blank lines are ignored inside and around moved blocks, as the whitespace proof ignores them.
+  - A move must be between two different hunks. Moves into or out of a generated file aren't proved, since both ends would be hidden.
+  - No proof at all for a file whose mode changed, even with hunks, because collapsing it would hide the mode change.
+  - A renamed file is generated only if both its old and new path are (both lockfile names, or both marked in `.gitattributes`), so renaming code to `yarn.lock` doesn't hide it. A rename proof needs a non-binary file.
+  - A marker must be the same marker in base and head. Contents missing from `baseContents`/`headContents` count as no marker.
+  - The whitespace check compares each run of changed lines between context lines on its own, so a line moved past a context line isn't whitespace-only. "Trailing whitespace" means spaces, tabs and `\r`; a non-breaking space is not whitespace.
+- **`.gitattributes` follows git, not this doc, for trailing slashes.** `gen/ linguist-generated` matches nothing, because git doesn't apply a pattern that matches a directory to the files inside (checked with `git check-attr`); write `gen/**`. Character classes are supported. A pattern it can't read unsets its attributes for every path instead of being skipped. `linguist-generated=<anything but true>` counts as unset.
+- **Lockfile warnings** accept a matching manifest in the same directory *or below*, because workspaces (pnpm, yarn, Cargo, uv) keep one lockfile at the root. `pnpm-workspace.yaml` counts for `pnpm-lock.yaml`, and `packages.lock.json` (NuGet) pairs with `*.csproj`, `*.fsproj` and `*.vbproj`. The warning names every matching manifest, e.g. `pnpm-lock.yaml changed without a change to package.json or pnpm-workspace.yaml`.
+- **Move details** list every region, joined with `; `, e.g. `moved to src/b.ts:10–12, identical; moved to src/c.ts:10–12, identical`. "Moved from" names the old path for a renamed file. Whitespace details say what changed: `whitespace only: blank lines, trailing whitespace`, or `line endings`, or `newline at end of file`.
+- **Parser.** Paths come from `rename`/`copy` lines, then `---`/`+++`, then `diff --git`. Git appends a tab to `---`/`+++` paths that contain a space, which the parser drops. A hunk before the `---`/`+++` lines, an empty line inside a hunk, or any unknown header line is an error. `DiffParseError.line` is 1-based. Stage 10: small-feature's diff parses to exactly `smallFeatureFiles` with `language: null`, and refactor-move gets a proof for every hunk except `src/config.ts` (the reformat, stage 04's).
+- **Copies** (only with `git diff -C`) are added files with no hunks when identical, so the reviewer sees an empty added file. GitHub's and Bitbucket's diffs don't detect copies, so this shouldn't come up.
+- **Outside this stage's paths:** `web/tsconfig.json` (stage 13's) excludes `src/domain/**/*.test.ts`, because domain tests read fixtures with `node:fs` and the web program has no Node types; the root tsconfig still typechecks them. `vitest.config.ts` (stage 01's) measures coverage of `.ts`/`.tsx` files only, so `.diff` fixtures aren't parsed as source.
