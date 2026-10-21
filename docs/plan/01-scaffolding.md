@@ -1,6 +1,6 @@
 # Stage 01: Scaffolding and tooling
 
-**Status:** In progress (on main; CI not yet confirmed)
+**Status:** Done (pushed to main without a PR; CI green on 1ff7891)
 **Depends on:** —
 **Unblocks:** everything
 **Owns:** root config files, `.github/`, the folder skeleton, `src/domain/shared/`
@@ -171,7 +171,7 @@ Ubuntu only for now. Stage 17 adds a macOS and Windows smoke test.
 - [x] `pnpm install && pnpm check && pnpm build` passes on a clean clone.
 - [x] `node src/cli/main.ts` prints the version.
 - [x] Each dependency rule was seen to fail on a deliberate violation.
-- [ ] CI runs on a PR and passes.
+- [x] CI runs on a PR and passes. (Ran on the push to main instead; no PR was opened.)
 - [x] `.idea/` is ignored.
 
 ## Open issues
