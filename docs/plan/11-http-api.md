@@ -1,6 +1,6 @@
 # Stage 11: HTTP API
 
-**Status:** Not started
+**Status:** In progress (branch stage/11-http-api)
 **Depends on:** 10
 **Unblocks:** 12
 **Owns:** `src/adapters/http/`
