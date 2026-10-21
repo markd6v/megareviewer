@@ -16,6 +16,7 @@ import {
   describeGitHostContract,
   describeTicketSourceContract,
   FakeAnalysisModel,
+  FakeCodeParser,
   FakeGitHost,
   FakeTicketSource,
   FixedClock,
@@ -278,6 +279,60 @@ describe("FakeAnalysisModel", () => {
     const model = new FakeAnalysisModel({ maxInputTokens: 10 });
     const result = await model.checkSize(smallFeatureInput);
     expect(!result.ok && result.error.kind).toBe("too-large");
+  });
+});
+
+describe("FakeCodeParser", () => {
+  const parser = new FakeCodeParser();
+
+  it("knows a few languages by extension", () => {
+    expect(parser.languageFor("src/a.TS")).toBe("typescript");
+    expect(parser.languageFor("README")).toBeNull();
+    expect(parser.languageFor("config/app.yaml")).toBeNull();
+  });
+
+  it("gives equal syntax nodes for a reformat and different ones for a change", async () => {
+    const nodes = async (source: string) => {
+      const result = await parser.syntaxNodes(source, "typescript");
+      return result.ok ? result.value : [];
+    };
+    const original = await nodes("const a = { b: 1, c: 'x y' };");
+    expect(await nodes("const a = {\n  b: 1,\n  c: 'x y'\n};")).toEqual(original);
+    expect(await nodes("const a = { b: 2, c: 'x y' };")).not.toEqual(original);
+    expect(await nodes("const a = { b: 1, c: 'x  y' };")).not.toEqual(original);
+  });
+
+  it("finds top-level definitions and references", async () => {
+    const result = await parser.symbols(
+      "import { b } from './b';\n\nexport function a() {\n  return b();\n}\nconst c = a;\n",
+      "typescript",
+    );
+    expect(result.ok && result.value.definitions).toEqual([
+      { name: "a", kind: "function", startLine: 3, endLine: 5 },
+      { name: "c", kind: "variable", startLine: 6, endLine: 7 },
+    ]);
+    const references = result.ok ? result.value.references : [];
+    expect(references).toContainEqual({ name: "b", line: 4 });
+    expect(references).toContainEqual({ name: "a", line: 6 });
+    expect(references).not.toContainEqual({ name: "a", line: 3 });
+  });
+
+  it("fails for unknown languages and when scripted", async () => {
+    const failing = new FakeCodeParser();
+    expect(await failing.symbols("x", "cobol")).toEqual(
+      err({ kind: "unsupported-language", message: "cobol isn't supported" }),
+    );
+    failing.failAlways("syntaxNodes");
+    expect((await failing.syntaxNodes("x", "python")).ok).toBe(false);
+    expect((await failing.symbols("x", "python")).ok).toBe(true);
+    failing.failAlways("syntaxNodes", false);
+    expect((await failing.syntaxNodes("x", "python")).ok).toBe(true);
+    expect(failing.calls.map((call) => call.method)).toEqual([
+      "symbols",
+      "syntaxNodes",
+      "symbols",
+      "syntaxNodes",
+    ]);
   });
 });
 

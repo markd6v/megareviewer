@@ -14,6 +14,7 @@ export {
   type PassValues,
   type ScriptedPass,
 } from "./fake-analysis-model.ts";
+export { type CodeParserMethod, FakeCodeParser } from "./fake-code-parser.ts";
 export { FakeGitHost, type GitHostMethod, type PublishAttempt } from "./fake-git-host.ts";
 export { FakeTicketSource } from "./fake-ticket-source.ts";
 export { FixedClock } from "./fixed-clock.ts";
