@@ -1,6 +1,6 @@
 # Stage 05: GitHub adapter
 
-**Status:** In progress (on main; CI not yet confirmed)
+**Status:** Done (pushed to main without a PR; CI green on 7e7ed9b)
 **Depends on:** 02
 **Unblocks:** 12
 **Owns:** `src/adapters/github/`
