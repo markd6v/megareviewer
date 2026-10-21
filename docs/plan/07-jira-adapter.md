@@ -72,14 +72,21 @@ Cap the result at 8,000 characters. If cut, end with `\n[description truncated a
 
 ## Definition of done
 
-- [ ] Contract suite passes for both implementations.
-- [ ] Every ADF row is tested.
-- [ ] Fixtures contain no real site names, tokens or personal data.
+- [x] Contract suite passes for both implementations.
+- [x] Every ADF row is tested.
+- [x] Fixtures contain no real site names, tokens or personal data.
 
 ## Open issues
 
-_None yet._
+- **Synthetic fixtures** (see `src/adapters/jira/fixtures/PROVENANCE.md`): no Jira site was available. Recording `read.json` needs a site, an unscoped API token and a few keys; the recorder is in place. Unverified until then: the exact 401 body, and that bad credentials always get a 401 rather than being treated as anonymous (a 404 for every key). Stage 12's startup check relies on the 401.
 
 ## Notes for later stages
 
-_None yet._
+Where the code differs from or adds to this doc.
+
+- **`parseJiraBaseUrl(raw): Result<string, string>`** is exported for stage 12, to report a bad `JIRA_BASE_URL` as a config problem. It requires `https://`, rejects a query, fragment or credentials, trims trailing slashes and keeps any path. `createJiraTicketSource` throws on a URL it rejects, since the composition root should have checked it.
+- **Lookups.** Keys are deduplicated, and `found` and `missing` keep the order asked. A moved issue answers to its old key with its new one; the ticket keeps the key the PR mentions (the browse link redirects), so every key ends up found or missing.
+- **Errors.** Any failure fails the whole call and stops sending requests (ones in flight finish), rather than dropping a ticket. `TicketError` has no forbidden or rate-limited kinds: 401 and 403 are `unauthorized` (a 403 with `x-seraph-loginreason: AUTHENTICATION_DENIED` means Jira wants a CAPTCHA, and the message says so), 429 is `unexpected` with the `retry-after` seconds in the message, other non-2xx are `unexpected`. A `fetch` that throws anything but a `TypeError` is a bug and is rethrown.
+- **ADF.** The 8,000-character cap is on the text; the marker comes after it, and a surrogate pair is never split. Beyond the table: `embedCard` renders as its URL like the other cards; ordered lists number from `attrs.order`; a mention gets exactly one `@` (`@someone` without display text); a code fence is longer than any backtick run in the code. Inline nodes the table doesn't list (`status`, `date`) render through their content, so they disappear.
+- **Token:** an Atlassian API token without scopes. Scoped tokens only work through `api.atlassian.com` with the site's cloud ID. Stage 17 copies this from the fixture folder's provenance note.
+- **Recorder** needs Node 24 (it's run as `.ts`). It replaces the site, mentions and email addresses; names in plain text must be replaced by hand.
