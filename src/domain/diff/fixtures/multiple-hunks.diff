@@ -1,0 +1,21 @@
+diff --git a/shapes.c b/shapes.c
+index 37e969b..9c47410 100644
+--- a/shapes.c
++++ b/shapes.c
+@@ -2,7 +2,7 @@
+ 
+ double area(double r)
+ {
+-	double a = M_PI * r * r;
++	const double a = M_PI * r * r;
+ 	return a;
+ }
+ 
+@@ -14,6 +14,6 @@ double circumference(double r)
+ 
+ double diameter(double r)
+ {
+-	double d = 2 * r;
++	const double d = 2 * r;
+ 	return d;
+ }

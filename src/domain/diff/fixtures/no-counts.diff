@@ -1,0 +1,7 @@
+diff --git a/single.txt b/single.txt
+index 6c542ab..5ea2ed4 100644
+--- a/single.txt
++++ b/single.txt
+@@ -1 +1 @@
+-only
++changed

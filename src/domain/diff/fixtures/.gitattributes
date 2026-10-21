@@ -1,0 +1,2 @@
+# Keep the exact bytes git produced: CRLF, trailing whitespace, missing final newlines.
+*.diff -text

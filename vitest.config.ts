@@ -24,7 +24,7 @@ export default defineConfig({
     ],
     coverage: {
       provider: "v8",
-      include: ["src/**", "contracts/**", "web/src/**"],
+      include: ["src/**/*.{ts,tsx}", "contracts/**/*.ts", "web/src/**/*.{ts,tsx}"],
       exclude: ["**/*.test.{ts,tsx}", "src/application/testing/**"],
       thresholds: {
         "src/domain/**": { branches: 90, lines: 90 },

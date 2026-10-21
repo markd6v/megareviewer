@@ -1,0 +1,11 @@
+diff --git a/notes.txt b/notes.txt
+new file mode 100644
+index 0000000..94c99a3
+--- /dev/null
++++ b/notes.txt
+@@ -0,0 +1,5 @@
++line 1
++line 2
++line 3
++line 4
++line 5

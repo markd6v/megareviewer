@@ -1,0 +1,7 @@
+diff --git "a/dir with space/with space\tand \303\251.txt" "b/dir with space/with space\tand \303\251.txt"
+new file mode 100644
+index 0000000..ce01362
+--- /dev/null
++++ "b/dir with space/with space\tand \303\251.txt"	
+@@ -0,0 +1 @@
++hello

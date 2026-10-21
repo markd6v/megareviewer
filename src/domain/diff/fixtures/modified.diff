@@ -1,0 +1,13 @@
+diff --git a/notes.txt b/notes.txt
+index 5578ccb..8d85ab6 100644
+--- a/notes.txt
++++ b/notes.txt
+@@ -2,7 +2,7 @@ line 1
+ line 2
+ line 3
+ line 4
+-line 5
++line five
+ line 6
+ line 7
+ line 8
