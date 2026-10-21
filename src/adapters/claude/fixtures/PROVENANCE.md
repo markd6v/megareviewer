@@ -10,7 +10,7 @@ Both files are synthetic: no Anthropic credentials were available while building
 ## Recording real responses
 
 ```bash
-node src/adapters/claude/live-check.ts --record
+node evals/claude-live-check.ts --record
 ```
 
 It writes `small-feature.json` with the raw response streams (`{ "sse": "…" }` per pass), which `anthropic-fetch.ts` replays byte for byte. Point the import in `claude-analysis-model.test.ts` at it and delete the synthetic file. Responses hold no credentials or personal data; the request bodies aren't kept.
