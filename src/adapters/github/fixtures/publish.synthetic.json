@@ -1,0 +1,147 @@
+[
+  {
+    "request": {
+      "method": "POST",
+      "url": "https://api.github.com/repos/sindresorhus/is/pulls/210/reviews",
+      "accept": "application/vnd.github.v3+json",
+      "body": {
+        "commit_id": "b177d02e3aee907af72dc76aece21faf74be7935",
+        "event": "REQUEST_CHANGES",
+        "body": "Fixes the message being lost; one question about the test.",
+        "comments": [
+          {
+            "path": "source/index.ts",
+            "line": 1146,
+            "side": "RIGHT",
+            "body": "The assertion now receives the message as a second argument."
+          },
+          {
+            "path": "source/index.ts",
+            "line": 1152,
+            "side": "LEFT",
+            "body": "Dropping forEach also drops the index argument. Intended?"
+          },
+          {
+            "path": "test/test.ts",
+            "line": 776,
+            "side": "RIGHT",
+            "body": "Worth a case without a custom message too."
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json; charset=utf-8"
+      },
+      "body": {
+        "id": 1001,
+        "html_url": "https://github.com/sindresorhus/is/pull/210#pullrequestreview-1001",
+        "submitted_at": "2026-01-01T00:00:05Z"
+      }
+    }
+  },
+  {
+    "request": {
+      "method": "GET",
+      "url": "https://api.github.com/repos/sindresorhus/is/pulls/210/reviews/1001/comments?per_page=100",
+      "accept": "application/vnd.github.v3+json"
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json; charset=utf-8"
+      },
+      "body": [
+        {
+          "id": 5001,
+          "path": "source/index.ts",
+          "line": 1146,
+          "side": "RIGHT",
+          "body": "The assertion now receives the message as a second argument."
+        },
+        {
+          "id": 5002,
+          "path": "source/index.ts",
+          "line": 1152,
+          "side": "LEFT",
+          "body": "Dropping forEach also drops the index argument. Intended?"
+        },
+        {
+          "id": 5003,
+          "path": "test/test.ts",
+          "line": 776,
+          "side": "RIGHT",
+          "body": "Worth a case without a custom message too."
+        }
+      ]
+    }
+  },
+  {
+    "request": {
+      "method": "POST",
+      "url": "https://api.github.com/repos/sindresorhus/is/pulls/210/reviews",
+      "accept": "application/vnd.github.v3+json",
+      "body": {
+        "commit_id": "b177d02e3aee907af72dc76aece21faf74be7935",
+        "event": "REQUEST_CHANGES",
+        "body": "Fixes the message being lost; one question about the test.",
+        "comments": [
+          {
+            "path": "source/index.ts",
+            "line": 1152,
+            "side": "LEFT",
+            "body": "Dropping forEach also drops the index argument. Intended?"
+          },
+          {
+            "path": "test/test.ts",
+            "line": 776,
+            "side": "RIGHT",
+            "body": "Worth a case without a custom message too."
+          }
+        ]
+      }
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json; charset=utf-8"
+      },
+      "body": {
+        "id": 1002,
+        "html_url": "https://github.com/sindresorhus/is/pull/210#pullrequestreview-1002",
+        "submitted_at": "2026-01-01T00:00:05Z"
+      }
+    }
+  },
+  {
+    "request": {
+      "method": "GET",
+      "url": "https://api.github.com/repos/sindresorhus/is/pulls/210/reviews/1002/comments?per_page=100",
+      "accept": "application/vnd.github.v3+json"
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json; charset=utf-8"
+      },
+      "body": [
+        {
+          "id": 5011,
+          "path": "source/index.ts",
+          "line": 1152,
+          "side": "LEFT",
+          "body": "Dropping forEach also drops the index argument. Intended?"
+        },
+        {
+          "id": 5012,
+          "path": "test/test.ts",
+          "line": 776,
+          "side": "RIGHT",
+          "body": "Worth a case without a custom message too."
+        }
+      ]
+    }
+  }
+]
