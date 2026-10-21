@@ -1,6 +1,6 @@
 # Stage 08: Claude adapter: model passes
 
-**Status:** Not started
+**Status:** In progress (branch stage/08-claude-adapter)
 **Depends on:** 02
 **Unblocks:** 12, 16
 **Owns:** `src/adapters/claude/`
