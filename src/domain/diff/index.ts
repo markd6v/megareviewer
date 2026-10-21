@@ -1,3 +1,5 @@
+export { hunkId } from "./hunk-id.ts";
+export { type DiffParseError, parseUnifiedDiff } from "./parse-diff.ts";
 export {
   CallGraphHint,
   DiffLine,

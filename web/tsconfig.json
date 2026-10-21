@@ -7,5 +7,6 @@
     "jsx": "react-jsx",
     "types": []
   },
-  "include": ["src", "dev", "../contracts", "../src/domain"]
+  "include": ["src", "dev", "../contracts", "../src/domain"],
+  "exclude": ["../src/domain/**/*.test.ts"]
 }
