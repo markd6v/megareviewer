@@ -1,0 +1,553 @@
+[
+  {
+    "request": {
+      "method": "GET",
+      "url": "https://example.atlassian.net/rest/api/3/issue/SHOP-123?fields=summary,description,issuetype,status",
+      "accept": "application/json"
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json;charset=UTF-8"
+      },
+      "body": {
+        "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
+        "id": "10123",
+        "self": "https://example.atlassian.net/rest/api/3/issue/10123",
+        "key": "SHOP-123",
+        "fields": {
+          "summary": "Let customers download order receipts",
+          "issuetype": {
+            "self": "https://example.atlassian.net/rest/api/3/issuetype/10001",
+            "id": "10001",
+            "name": "Story",
+            "subtask": false
+          },
+          "status": {
+            "self": "https://example.atlassian.net/rest/api/3/status/10002",
+            "id": "10002",
+            "name": "In Review",
+            "statusCategory": {
+              "id": 4,
+              "key": "indeterminate",
+              "name": "In Progress"
+            }
+          },
+          "description": {
+            "type": "doc",
+            "version": 1,
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Customers ask support for receipts several times a day. Add a way to download a plain-text receipt for any order from the order page. Receipts should be cached so repeated downloads are cheap; the cache lifetime must be configurable."
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  {
+    "request": {
+      "method": "GET",
+      "url": "https://example.atlassian.net/rest/api/3/issue/PAY-42?fields=summary,description,issuetype,status",
+      "accept": "application/json"
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json;charset=UTF-8"
+      },
+      "body": {
+        "id": "10042",
+        "self": "https://example.atlassian.net/rest/api/3/issue/10042",
+        "key": "PAY-42",
+        "fields": {
+          "summary": "Refund page crashes for store-credit orders",
+          "issuetype": {
+            "id": "10004",
+            "name": "Bug",
+            "subtask": false
+          },
+          "status": {
+            "id": "3",
+            "name": "In Progress"
+          },
+          "description": {
+            "type": "doc",
+            "version": 1,
+            "content": [
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Opening the refund dialog for an order paid with store credit shows a 500. Stack trace points at refundAmount reading capturedCents of null."
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  {
+    "request": {
+      "method": "GET",
+      "url": "https://example.atlassian.net/rest/api/3/issue/SHOP-130?fields=summary,description,issuetype,status",
+      "accept": "application/json"
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json;charset=UTF-8"
+      },
+      "body": {
+        "id": "10130",
+        "self": "https://example.atlassian.net/rest/api/3/issue/10130",
+        "key": "SHOP-130",
+        "fields": {
+          "summary": "Define the receipt layout",
+          "issuetype": {
+            "id": "10002",
+            "name": "Task",
+            "subtask": false
+          },
+          "status": {
+            "id": "10001",
+            "name": "To Do"
+          },
+          "description": {
+            "type": "doc",
+            "version": 1,
+            "content": [
+              {
+                "type": "heading",
+                "attrs": {
+                  "level": 2
+                },
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Receipt format"
+                  }
+                ]
+              },
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Serve receipts from "
+                  },
+                  {
+                    "type": "text",
+                    "text": "GET /orders/:id/receipt",
+                    "marks": [
+                      {
+                        "type": "code"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "text",
+                    "text": " as "
+                  },
+                  {
+                    "type": "text",
+                    "text": "plain text",
+                    "marks": [
+                      {
+                        "type": "strong"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "text",
+                    "text": "."
+                  },
+                  {
+                    "type": "hardBreak"
+                  },
+                  {
+                    "type": "text",
+                    "text": "Ask "
+                  },
+                  {
+                    "type": "mention",
+                    "attrs": {
+                      "id": "000000:00000000-0000-0000-0000-000000000001",
+                      "text": "@Alex Reviewer",
+                      "accessLevel": ""
+                    }
+                  },
+                  {
+                    "type": "text",
+                    "text": " before changing the layout "
+                  },
+                  {
+                    "type": "emoji",
+                    "attrs": {
+                      "shortName": ":white_check_mark:",
+                      "id": "2705",
+                      "text": "✅"
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "bulletList",
+                "content": [
+                  {
+                    "type": "listItem",
+                    "content": [
+                      {
+                        "type": "paragraph",
+                        "content": [
+                          {
+                            "type": "text",
+                            "text": "Header with the order number"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "listItem",
+                    "content": [
+                      {
+                        "type": "paragraph",
+                        "content": [
+                          {
+                            "type": "text",
+                            "text": "One line per item:"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "orderedList",
+                        "attrs": {
+                          "order": 1
+                        },
+                        "content": [
+                          {
+                            "type": "listItem",
+                            "content": [
+                              {
+                                "type": "paragraph",
+                                "content": [
+                                  {
+                                    "type": "text",
+                                    "text": "name"
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "type": "listItem",
+                            "content": [
+                              {
+                                "type": "paragraph",
+                                "content": [
+                                  {
+                                    "type": "text",
+                                    "text": "quantity"
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "type": "listItem",
+                            "content": [
+                              {
+                                "type": "paragraph",
+                                "content": [
+                                  {
+                                    "type": "text",
+                                    "text": "price"
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "listItem",
+                    "content": [
+                      {
+                        "type": "paragraph",
+                        "content": [
+                          {
+                            "type": "text",
+                            "text": "Totals"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "codeBlock",
+                "attrs": {
+                  "language": "text"
+                },
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Order #1042\nWidget x2  $10.00"
+                  }
+                ]
+              },
+              {
+                "type": "blockquote",
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "Receipts are for customers, not accountants."
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Follows "
+                  },
+                  {
+                    "type": "inlineCard",
+                    "attrs": {
+                      "url": "https://example.atlassian.net/browse/SHOP-123"
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "blockCard",
+                "attrs": {
+                  "url": "https://example.com/docs/receipts"
+                }
+              },
+              {
+                "type": "table",
+                "attrs": {
+                  "isNumberColumnEnabled": false,
+                  "layout": "default"
+                },
+                "content": [
+                  {
+                    "type": "tableRow",
+                    "content": [
+                      {
+                        "type": "tableHeader",
+                        "attrs": {},
+                        "content": [
+                          {
+                            "type": "paragraph",
+                            "content": [
+                              {
+                                "type": "text",
+                                "text": "Field",
+                                "marks": [
+                                  {
+                                    "type": "strong"
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "tableHeader",
+                        "attrs": {},
+                        "content": [
+                          {
+                            "type": "paragraph",
+                            "content": [
+                              {
+                                "type": "text",
+                                "text": "Source",
+                                "marks": [
+                                  {
+                                    "type": "strong"
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "tableRow",
+                    "content": [
+                      {
+                        "type": "tableCell",
+                        "attrs": {},
+                        "content": [
+                          {
+                            "type": "paragraph",
+                            "content": [
+                              {
+                                "type": "text",
+                                "text": "Total"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "tableCell",
+                        "attrs": {},
+                        "content": [
+                          {
+                            "type": "paragraph",
+                            "content": [
+                              {
+                                "type": "text",
+                                "text": "order.totalCents",
+                                "marks": [
+                                  {
+                                    "type": "code"
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "rule"
+              },
+              {
+                "type": "panel",
+                "attrs": {
+                  "panelType": "info"
+                },
+                "content": [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "Cache lifetime comes from RECEIPT_CACHE_TTL."
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "mediaSingle",
+                "attrs": {
+                  "layout": "center"
+                },
+                "content": [
+                  {
+                    "type": "media",
+                    "attrs": {
+                      "id": "00000000-0000-0000-0000-000000000002",
+                      "type": "file",
+                      "collection": ""
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  {
+    "request": {
+      "method": "GET",
+      "url": "https://example.atlassian.net/rest/api/3/issue/SHOP-131?fields=summary,description,issuetype,status",
+      "accept": "application/json"
+    },
+    "response": {
+      "status": 200,
+      "headers": {
+        "content-type": "application/json;charset=UTF-8"
+      },
+      "body": {
+        "id": "10131",
+        "self": "https://example.atlassian.net/rest/api/3/issue/10131",
+        "key": "SHOP-131",
+        "fields": {
+          "summary": "Add a receipt link to order emails",
+          "issuetype": {
+            "id": "10002",
+            "name": "Task",
+            "subtask": false
+          },
+          "status": {
+            "id": "10001",
+            "name": "To Do"
+          },
+          "description": null
+        }
+      }
+    }
+  },
+  {
+    "request": {
+      "method": "GET",
+      "url": "https://example.atlassian.net/rest/api/3/issue/SHOP-999?fields=summary,description,issuetype,status",
+      "accept": "application/json"
+    },
+    "response": {
+      "status": 404,
+      "headers": {
+        "content-type": "application/json;charset=UTF-8"
+      },
+      "body": {
+        "errorMessages": [
+          "Issue does not exist or you do not have permission to see it."
+        ],
+        "errors": {}
+      }
+    }
+  },
+  {
+    "request": {
+      "method": "GET",
+      "url": "https://example.atlassian.net/rest/api/3/issue/HTTP-2?fields=summary,description,issuetype,status",
+      "accept": "application/json"
+    },
+    "response": {
+      "status": 404,
+      "headers": {
+        "content-type": "application/json;charset=UTF-8"
+      },
+      "body": {
+        "errorMessages": [
+          "Issue does not exist or you do not have permission to see it."
+        ],
+        "errors": {}
+      }
+    }
+  }
+]

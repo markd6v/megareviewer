@@ -1,0 +1,50 @@
+[
+  {
+    "request": {
+      "method": "GET",
+      "url": "https://example.atlassian.net/rest/api/3/issue/SHOP-123?fields=summary,description,issuetype,status",
+      "accept": "application/json"
+    },
+    "response": {
+      "status": 401,
+      "headers": { "content-type": "text/plain;charset=UTF-8" },
+      "body": "Client must be authenticated to access this resource."
+    }
+  },
+  {
+    "request": {
+      "method": "GET",
+      "url": "https://example.atlassian.net/rest/api/3/issue/PAY-42?fields=summary,description,issuetype,status",
+      "accept": "application/json"
+    },
+    "response": {
+      "status": 401,
+      "headers": { "content-type": "text/plain;charset=UTF-8" },
+      "body": "Client must be authenticated to access this resource."
+    }
+  },
+  {
+    "request": {
+      "method": "GET",
+      "url": "https://example.atlassian.net/rest/api/3/issue/SHOP-130?fields=summary,description,issuetype,status",
+      "accept": "application/json"
+    },
+    "response": {
+      "status": 401,
+      "headers": { "content-type": "text/plain;charset=UTF-8" },
+      "body": "Client must be authenticated to access this resource."
+    }
+  },
+  {
+    "request": {
+      "method": "GET",
+      "url": "https://example.atlassian.net/rest/api/3/issue/SHOP-131?fields=summary,description,issuetype,status",
+      "accept": "application/json"
+    },
+    "response": {
+      "status": 401,
+      "headers": { "content-type": "text/plain;charset=UTF-8" },
+      "body": "Client must be authenticated to access this resource."
+    }
+  }
+]
