@@ -93,9 +93,9 @@ With `app.request()` in process, real use cases from stage 10, and stage 02 fake
 
 ## Definition of done
 
-- [ ] Every contract route is implemented and tested.
-- [ ] Every response in tests matches its contract schema.
-- [ ] All security checks above are tested.
+- [x] Every contract route is implemented and tested.
+- [x] Every response in tests matches its contract schema.
+- [x] All security checks above are tested.
 
 ## Open issues
 
@@ -103,4 +103,13 @@ _None yet._
 
 ## Notes for later stages
 
-_None yet._
+Where the code differs from or adds to this doc.
+
+- **Shape.** `createHttpApp(options)` takes `HttpAppOptions`; `startHttpServer` resolves to `HttpServer { port; close() }`. `close()` also drops open connections, so open event streams don't keep the process alive.
+- **Middleware order.** Security headers run before the host check, so its 403 carries them too. The request log is at `debug`; stage 12 picks which levels to print.
+- **Compile-time contract checks.** `ErrorCodesMatch` fails to compile when the application's `ErrorCode` and the contract's drift apart. Each route handler must return its route's contract response type, and a `Handlers` record keyed by `RouteName` makes a missing route a type error.
+- **Responses.** Every JSON success is `200`. A `bad-request` message names each problem as `params.id: …` or `body.url: …`, joined with `; `; a body that isn't JSON gets `The body isn't valid JSON`. An exception is logged as `request failed` with its stack, and the client gets `500 internal` with `Something went wrong on the server`.
+- **Unknown paths.** An unknown `/api/*` route answers `401` without the token and a `not-found` error with it. Other unknown paths get `index.html` when `staticDir` is set, else a plain-text 404.
+- **Static files.** A path whose decoded segments contain `..`, `/`, `\` or NUL, or that doesn't decode, gets a plain-text 404. `..` and `%2e%2e` segments are already resolved by the URL parser, so they stay inside `staticDir`. Files outside `assets/` other than `index.html` get no `Cache-Control`. A folder without `index.html` answers 404.
+- **Events.** The route checks the analysis with `getAnalysisView`, so every connection costs the host's `currentUser` call, plus a cached stale check for a complete analysis. A lighter status lookup in stage 10's use cases would avoid that.
+- **Tests.** All app tests are in one file, `http-app.test.ts`: dependency rule `testing-is-for-tests` lets only `*.test.ts` files import the fakes, so a shared setup helper can't sit in its own file.
