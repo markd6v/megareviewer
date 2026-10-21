@@ -168,11 +168,11 @@ Ubuntu only for now. Stage 17 adds a macOS and Windows smoke test.
 
 ## Definition of done
 
-- [ ] `pnpm install && pnpm check && pnpm build` passes on a clean clone.
-- [ ] `node src/cli/main.ts` prints the version.
-- [ ] Each dependency rule was seen to fail on a deliberate violation.
+- [x] `pnpm install && pnpm check && pnpm build` passes on a clean clone.
+- [x] `node src/cli/main.ts` prints the version.
+- [x] Each dependency rule was seen to fail on a deliberate violation.
 - [ ] CI runs on a PR and passes.
-- [ ] `.idea/` is ignored.
+- [x] `.idea/` is ignored.
 
 ## Open issues
 
@@ -180,4 +180,11 @@ _None yet._
 
 ## Notes for later stages
 
-_None yet._
+- **TypeScript is 6.0.3, not 7.** TypeScript 7 has no JavaScript API yet, and dependency-cruiser needs one to read `.ts` imports (without it, it silently misses dependencies). Move to 7 once dependency-cruiser supports it.
+- **Install scripts:** `.npmrc` sets `strict-dep-builds=true`, so a new dependency with an install script fails `pnpm install` instead of only warning. esbuild is listed in `pnpm.ignoredBuiltDependencies`: its postinstall only checks the platform binary, which pnpm installs as an optional dependency anyway. `onlyBuiltDependencies` stays empty.
+- **Imports:** Biome's `useImportExtensions` enforces the `.ts`/`.tsx` extension on relative imports.
+- **Test files** (`*.test.ts`) are exempt from the purity rules for `src/domain`, `src/application` and `contracts`, since they import Vitest.
+- **No-network setup** is `scripts/vitest/no-network.ts`, used by both Vitest projects.
+- **Folder skeleton:** `web/dev/` was added too, because `pnpm deps` and `web/tsconfig.json` include it. `src/cli/` and `scripts/` have no `index.ts`; they hold entry scripts, not modules.
+- **`Result`** has only `ok` and `err`. Add helpers when a stage needs them.
+- **CI** caches the pnpm store with `actions/cache`, because `setup-node`'s pnpm cache needs pnpm before corepack has enabled it.
