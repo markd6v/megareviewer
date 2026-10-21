@@ -1,6 +1,6 @@
 # Stage 09: SQLite store
 
-**Status:** Not started
+**Status:** In progress (branch stage/09-sqlite-store)
 **Depends on:** 02
 **Unblocks:** 12
 **Owns:** `src/adapters/sqlite/`
