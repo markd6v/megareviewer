@@ -94,7 +94,7 @@ Alternatives considered:
 
 | Service | Source | Required |
 |---|---|---|
-| GitHub | `GITHUB_TOKEN`, else `gh auth token` | For GitHub PRs |
+| GitHub | `GITHUB_TOKEN`, else `GH_TOKEN`, else `gh auth token` | For GitHub PRs |
 | Bitbucket Cloud | `BITBUCKET_EMAIL` + `BITBUCKET_API_TOKEN` (scoped Atlassian API token), `BITBUCKET_WORKSPACE` for the picker | For Bitbucket PRs |
 | Anthropic | SDK default resolution: `ANTHROPIC_API_KEY`, else an `ant auth login` profile | Yes |
 | Jira | `JIRA_BASE_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN` | No. Without it, ticket keys are shown but not fetched |
