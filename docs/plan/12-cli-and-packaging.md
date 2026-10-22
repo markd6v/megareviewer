@@ -135,15 +135,27 @@ Run in CI after `pnpm build`:
 
 ## Definition of done
 
-- [ ] `pnpm build` produces `dist/cli.js`, `dist/web/`, `dist/grammars/` and the license file.
-- [ ] `scripts/check-package.ts` passes in CI.
-- [ ] Manually: `node dist/cli.js` with a real GitHub token opens the picker; `doctor` reports accurately. (Note in **Open issues** if no credentials were available.)
-- [ ] `pnpm dev:fake` serves a working app against fixtures.
+- [ ] `pnpm build` produces `dist/cli.js`, `dist/web/`, `dist/grammars/` and the license file. Everything but `dist/web/`: see Open issues.
+- [ ] `scripts/check-package.ts` passes in CI. Passes locally (1.4 MB tarball); CI hasn't run, the branch isn't pushed.
+- [x] Manually: `node dist/cli.js` with a real GitHub token opens the picker; `doctor` reports accurately. With the `gh` token, `/api/status` shows the user and `/api/pull-requests` lists their PRs; there's no picker to open yet. `doctor` was right about GitHub, the missing Anthropic credentials, and a stray `BITBUCKET_WORKSPACE`.
+- [x] `pnpm dev:fake` serves a working app against fixtures. The API only, until there's a UI to pass with `--static`.
 
 ## Open issues
 
-_None yet._
+- **No UI in the package yet.** `scripts/build.ts` runs `vite build` only once `web/index.html` and `web/vite.config.ts` exist (stage 13), with `outDir` forced to `dist/web/`. The UI's bundled packages then get notices from Rollup's `moduleIds`, which is untested until then.
+- **Grammar license texts.** `THIRD_PARTY_LICENSES.txt` lists each grammar's source, version and license from `PROVENANCE.md`, but not the MIT text with its copyright line. Those files belong in stage 04's `grammars/` folder (for example `grammars/licenses/`), and `build.ts` would include them.
+- **`standardwebhooks`** (pulled in by `@anthropic-ai/sdk`) ships no license file. Its `package.json` says MIT, its repo's `LICENSE` is Apache-2.0. `build.ts` lists it as a reviewed exception with what its `package.json` says; any other package without a license file fails the build.
+- **Anthropic not checked live:** no credentials on the machine used, so `doctor`'s `models.retrieve` call and an analysis through the bundle are unverified.
 
 ## Notes for later stages
 
-_None yet._
+Where the code differs from or adds to this doc.
+
+- **Shape.** `compose(config, { grammarsDir, staticDir, version, logger })` resolves to `Result<Composition, string>`: a missing home directory or a database that won't open (one from a newer version says to upgrade) is a message, not a stack trace. `Composition` is `{ useCases, sessionToken, modelConfigured, app(port), close() }`. The app takes the port because its Host check needs it, and with `--port 0` the port is known only after listening: `serve(appFor, port)` in `serve.ts` listens first, then makes the app. `assemble(deps, options)` is the part after the adapters, shared with fake mode.
+- **Config** returns `{ config, problems }`, not one or the other, so `doctor` still checks the rest; the server starts only without problems. Blank variables count as unset. `BITBUCKET_WORKSPACE` without credentials is a problem, which says app passwords aren't supported when `BITBUCKET_APP_PASSWORD` is set. A relative `MEGAREVIEWER_HOME` resolves against the working directory. The config is the only reader of configuration; the SDK reads `ANTHROPIC_*` itself, and `open-browser.ts` runs the opener.
+- **No Anthropic credentials.** `anthropicConfigured` checks the client's API key or auth token, else an `ant auth login` profile via the SDK's `loadConfig` (`@anthropic-ai/sdk/core/credentials`). Without them the model is `unconfiguredModel`, which fails every pass as `unauthorized` with the fix, so the analysis fails as a `model-error` instead of the SDK throwing.
+- **`doctor`** marks unconfigured optional services `–`, besides ✓ and ✗, and exits 1 when any check fails. Jira is probed with `MEGAREVIEWER-0`. The model ID is repeated in `doctor.ts`, since the Claude adapter doesn't export it.
+- **Startup and shutdown.** A port in use exits 1. Without a built UI, startup says only the API is served. A second Ctrl+C exits at once with 1. Node 24.21 no longer warns that SQLite is experimental; the filter in `warnings.ts` is for earlier 24.x releases.
+- **Fake mode.** The extra PR is small-feature at `https://github.com/acme/shop/pull/104`; its first intent pass fails as `overloaded`, and a retry completes. `GET /__fake/publications` answers `{ attempts: PublishAttempt[] }`, GitHub's first. `POST /__fake/fail-publish-comment { n }` arms both fake hosts, and counts posts as `FakeGitHost.failPublishAtPost` does: the summary is post 1. The control routes do their own Host and token checks, because the HTTP adapter doesn't export its middleware. Fake mode uses the system clock and reports version `<version>-fake`.
+- **Build.** Notices come from esbuild's metafile, so every package with code in the bundle is listed. `dist/cli.js` is about 2.5 MB and executable. `check-package.ts` also requires `dist/cli.js`, rejects optional, peer and bundled dependencies and a `prepare` script, and runs `--version` with only `PATH` set. CI runs it after `pnpm build` (stage 01's workflow, one added step).
+- **ARCHITECTURE.md's** credentials table now lists `GH_TOKEN` between `GITHUB_TOKEN` and `gh auth token`, as this doc does.
