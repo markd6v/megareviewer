@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Refreshes the .wasm files in this folder: each grammar from its pinned GitHub release, and the
-# runtime from the installed web-tree-sitter. Prints the SHA-256 lines for PROVENANCE.md.
+# runtime from the installed web-tree-sitter. Their license texts go to licenses/, from the same
+# tag and package. Prints the SHA-256 lines for PROVENANCE.md.
 set -euo pipefail
 
 here="$(cd "$(dirname "$0")" && pwd)"
@@ -23,9 +24,13 @@ for entry in "${grammars[@]}"; do
   curl --fail --silent --show-error --location \
     --output "$here/tree-sitter-$language.wasm" \
     "https://github.com/$repository/releases/download/$tag/$asset"
+  curl --fail --silent --show-error --location \
+    --output "$here/licenses/${repository#*/}.txt" \
+    "https://raw.githubusercontent.com/$repository/$tag/LICENSE"
 done
 
 cp "$root/node_modules/web-tree-sitter/web-tree-sitter.wasm" "$here/web-tree-sitter.wasm"
+cp "$root/node_modules/web-tree-sitter/LICENSE" "$here/licenses/web-tree-sitter.txt"
 
 cd "$here"
 shasum -a 256 -- *.wasm

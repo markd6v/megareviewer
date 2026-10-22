@@ -9,8 +9,8 @@ import { z } from "zod";
 
 const DIST = "dist";
 const GRAMMARS = "src/adapters/treesitter/grammars";
-/** Kept in the repo for maintainers, not needed at runtime. */
-const GRAMMAR_EXTRAS = new Set(["PROVENANCE.md", "refresh.sh"]);
+/** Kept in the repo for maintainers, not needed at runtime. The license texts go into the notices. */
+const GRAMMAR_EXTRAS = new Set(["PROVENANCE.md", "refresh.sh", "licenses"]);
 
 // The bundle is ESM, but CommonJS dependencies inside it call require().
 const BANNER = `#!/usr/bin/env node
@@ -23,24 +23,31 @@ export const packageRootOf = (file: string): string | null => {
   return match?.[1] ?? null;
 };
 
-export interface GrammarNotice {
+export interface GrammarProvenance {
   readonly file: string;
   readonly source: string;
   readonly version: string;
   readonly license: string;
+  /** Relative to the grammars folder. */
+  readonly licenseFile: string;
 }
 
-/** The grammars' table in PROVENANCE.md: file, [repo](url), version, license, hash. */
-export const parseProvenance = (markdown: string): GrammarNotice[] =>
+export interface GrammarNotice extends GrammarProvenance {
+  readonly text: string;
+}
+
+/** The grammars' table in PROVENANCE.md: file, [repo](url), version, [license](file), hash. */
+export const parseProvenance = (markdown: string): GrammarProvenance[] =>
   [
     ...markdown.matchAll(
-      /^\| `([^`]+\.wasm)` \| \[[^\]]+\]\(([^)]+)\)[^|]* \| ([^|]+) \| ([^|]+) \|/gm,
+      /^\| `([^`]+\.wasm)` \| \[[^\]]+\]\(([^)]+)\)[^|]* \| ([^|]+) \| \[([^\]]+)\]\(([^)]+)\) \|/gm,
     ),
-  ].map(([, file = "", source = "", version = "", license = ""]) => ({
+  ].map(([, file = "", source = "", version = "", license = "", licenseFile = ""]) => ({
     file,
     source,
     version: version.trim(),
-    license: license.trim(),
+    license,
+    licenseFile,
   }));
 
 export interface PackageNotice {
@@ -61,10 +68,20 @@ export const formatNotices = (
   const grammarLines = grammars.map(
     (grammar) => `${grammar.file}: ${grammar.version}, ${grammar.license}, ${grammar.source}`,
   );
+  // tsx and typescript come from one repository, so they share one license text.
+  const byLicenseFile = Map.groupBy(grammars, (grammar) => grammar.licenseFile);
+  const grammarSections = [...byLicenseFile.values()].flatMap(([first, ...rest]) =>
+    first === undefined
+      ? []
+      : [
+          `${[first, ...rest].map((grammar) => grammar.file).join(", ")} (${first.license})\n\n${first.text.trim()}\n`,
+        ],
+  );
   return [
     "megareviewer bundles the following third-party software.\n",
     ...sections,
     `tree-sitter grammars in grammars/\n\n${grammarLines.join("\n")}\n`,
+    ...grammarSections,
   ].join(`\n${rule}\n\n`);
 };
 
@@ -108,6 +125,26 @@ const readNotice = async (root: string): Promise<PackageNotice> => {
   }
   const texts = await Promise.all(files.map((file) => readFile(join(root, file), "utf8")));
   return { name, version, license: license ?? "see text", text: texts.join("\n\n") };
+};
+
+/** Every .wasm we ship needs a row in PROVENANCE.md and the license text it links to. */
+const readGrammarNotices = async (): Promise<GrammarNotice[]> => {
+  const provenance = parseProvenance(await readFile(join(GRAMMARS, "PROVENANCE.md"), "utf8"));
+  const listed = new Set(provenance.map((grammar) => grammar.file));
+  const unlisted = (await readdir(GRAMMARS)).filter(
+    (file) => file.endsWith(".wasm") && !listed.has(file),
+  );
+  if (unlisted.length > 0) {
+    throw new Error(
+      `No license in ${GRAMMARS}/PROVENANCE.md for ${unlisted.join(", ")}: each row needs [license](file)`,
+    );
+  }
+  return Promise.all(
+    provenance.map(async (grammar) => ({
+      ...grammar,
+      text: await readFile(join(GRAMMARS, grammar.licenseFile), "utf8"),
+    })),
+  );
 };
 
 /** Builds the UI when stage 13's Vite app exists; returns the files it bundled. */
@@ -158,8 +195,7 @@ const main = async () => {
 
   const roots = [...new Set(bundled.flatMap((file) => packageRootOf(file) ?? []))].sort();
   const notices = await Promise.all(roots.map(readNotice));
-  const grammars = parseProvenance(await readFile(join(GRAMMARS, "PROVENANCE.md"), "utf8"));
-  if (grammars.length === 0) throw new Error(`No grammars found in ${GRAMMARS}/PROVENANCE.md`);
+  const grammars = await readGrammarNotices();
   await writeFile(join(DIST, "THIRD_PARTY_LICENSES.txt"), formatNotices(notices, grammars));
   console.log(
     `Built ${DIST}/ with ${notices.length} bundled packages and ${grammars.length} grammars.`,

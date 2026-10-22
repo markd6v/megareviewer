@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
+import { pathToFileURL } from "node:url";
 import { describe, expect, it } from "vitest";
 import { LANGUAGES } from "./languages.ts";
 
@@ -11,13 +12,20 @@ const filesIn = (url: URL, extension: string): string[] =>
     .filter((name) => name.endsWith(extension))
     .sort();
 
+const provenanceTable = readFileSync(new URL("PROVENANCE.md", grammars), "utf8");
 /** File name to SHA-256, from the table in PROVENANCE.md. */
 const provenance = new Map(
+  [...provenanceTable.matchAll(/^\| `([^`]+\.wasm)` \|.*\| `([0-9a-f]{64})` \|$/gm)].map(
+    ([, file = "", hash = ""]) => [file, hash],
+  ),
+);
+/** File name to the license text it links, from the same table. */
+const licenses = new Map(
   [
-    ...readFileSync(new URL("PROVENANCE.md", grammars), "utf8").matchAll(
-      /^\| `([^`]+\.wasm)` \|.*\| `([0-9a-f]{64})` \|$/gm,
+    ...provenanceTable.matchAll(
+      /^\| `([^`]+\.wasm)` \|.*\| \[[^\]]+\]\((licenses\/[^)]+)\) \| `[0-9a-f]{64}` \|$/gm,
     ),
-  ].map(([, file = "", hash = ""]) => [file, hash]),
+  ].map(([, file = "", license = ""]) => [file, license]),
 );
 
 describe("grammars", () => {
@@ -29,12 +37,21 @@ describe("grammars", () => {
     expect(actual).toEqual([...provenance].sort(([a = ""], [b = ""]) => a.localeCompare(b)));
   });
 
-  it("has the runtime of the installed web-tree-sitter", () => {
-    const installed = createRequire(import.meta.url).resolve(
-      "web-tree-sitter/web-tree-sitter.wasm",
+  it("links a license text in licenses/ for every .wasm file, and uses every one", () => {
+    expect([...licenses.keys()].sort()).toEqual(filesIn(grammars, ".wasm"));
+    expect([...new Set(licenses.values())].sort()).toEqual(
+      filesIn(new URL("licenses/", grammars), ".txt").map((file) => `licenses/${file}`),
     );
+  });
+
+  it("has the runtime and license text of the installed web-tree-sitter", () => {
+    const require = createRequire(import.meta.url);
+    const installed = require.resolve("web-tree-sitter/web-tree-sitter.wasm");
     expect(sha256(readFileSync(new URL("web-tree-sitter.wasm", grammars)))).toBe(
       sha256(readFileSync(installed)),
+    );
+    expect(readFileSync(new URL("licenses/web-tree-sitter.txt", grammars), "utf8")).toBe(
+      readFileSync(new URL("LICENSE", pathToFileURL(installed)), "utf8"),
     );
   });
 
