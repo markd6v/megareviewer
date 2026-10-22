@@ -122,4 +122,4 @@ Where the code differs from or adds to this doc.
 - **Outside this stage's paths:**
   - `.visually-hidden` is defined in `diff.css`; stage 13 may want it in `styles/base.css`.
   - `/favicon.ico` is a 404 in dev (no icon in `web/index.html`).
-  - Biome fails locally when `.claude/worktrees/` holds another checkout with its own `biome.json` ("nested root configuration"). Adding `"!!.claude"` to `files.includes` in `biome.json` (stage 01) would fix it; CI isn't affected.
+  - Biome failed locally when `.claude/worktrees/` held another checkout with its own `biome.json` ("nested root configuration"). `biome.json` (stage 01's) now excludes `.claude`, so `pnpm lint` works locally again.

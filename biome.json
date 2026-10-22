@@ -7,7 +7,8 @@
       "!!**/coverage",
       "!!evals/results",
       "!**/fixtures/**/*.json",
-      "!.idea"
+      "!.idea",
+      "!!.claude"
     ]
   },
   "formatter": {
