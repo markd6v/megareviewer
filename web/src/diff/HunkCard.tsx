@@ -122,7 +122,7 @@ export const HunkCard = memo(function HunkCard({
           <tbody>
             {shown.map((line, i) => (
               <Line
-                // Lines don't move within a hunk, so the index is their identity.
+                // biome-ignore lint/suspicious/noArrayIndexKey: lines don't move within a hunk.
                 key={i}
                 line={line}
                 tokens={tokens?.[i] ?? null}
@@ -175,6 +175,7 @@ const Line = memo(function Line({
                 };
           const Element = segment.changed ? Changed : "span";
           return (
+            // biome-ignore lint/suspicious/noArrayIndexKey: a line's segments are rebuilt together.
             <Element key={i} className={className} style={style}>
               {segment.text}
             </Element>
