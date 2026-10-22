@@ -96,9 +96,9 @@ Shown at `/dev/diff` in dev builds. Renders every case: each file status, a 2,00
 
 ## Definition of done
 
-- [ ] Every playground case renders correctly in light and dark themes.
-- [ ] A 2,000-line hunk renders and scrolls without visible lag (checked by hand; note the machine).
-- [ ] No `dangerouslySetInnerHTML`; highlighted code is rendered from tokens.
+- [x] Every playground case renders correctly in light and dark themes.
+- [x] A 2,000-line hunk renders and scrolls without visible lag (checked by hand; note the machine).
+- [x] No `dangerouslySetInnerHTML`; highlighted code is rendered from tokens.
 
 ## Open issues
 
@@ -106,4 +106,20 @@ _None yet._
 
 ## Notes for later stages
 
-_None yet._
+Where the code differs from or adds to this doc.
+
+- **API.** As specified, plus: `MechanicalGroup` and `FileNotices` render nothing when they have nothing to show. Each titles itself with an `h2` ("Mechanical changes N", "Changes without lines to show"). `HighlighterContext` is exported so tests can supply a fake `Highlighter`; without one, cards load Shiki asynchronously. Stage 15's tests can wrap renders in a provider whose `highlight` never resolves, as `DiffView.test.tsx` does. `useHighlighter(hunk, file)` returns tokens for each of the hunk's lines, or null while loading and for unknown languages.
+- **Focus.** A card is focusable (`tabIndex=0`), and focus anywhere inside it, including its risk badge, calls `onFocusHunk`. When `focusedHunkId` changes, the card takes focus and scrolls to `block: "start"`, unless focus is already inside it, so clicking a card never makes the page jump. Cards have `scroll-margin-top: var(--space-4)`; stage 15 should raise it if the review page has a sticky header (the playground does this for its sticky controls).
+- **Risk reason.** The badge is a button described by a `role="tooltip"` element, shown on hover and on `:focus-visible`. `content-visibility: auto` sits on the lines container (`.hunk-body`), not the card, because containment clips overflow and the tooltip overflows the header. The container's placeholder height is its line count × 20 px, so the scrollbar doesn't jump as cards render.
+- **More file notices than the doc lists, to fail safe.** Besides binary files and mode changes, `FileNotices` lists empty files added or deleted and a modified file with no hunks. Without that, such files would appear nowhere. A mode change gets a notice even when the file also has hunks. A rename without hunks isn't a notice, because its rename proof puts it in `MechanicalGroup`.
+- **Mechanical rows.** Several proofs on one hunk are joined with "; ". A proof whose file or hunk isn't in `files` still gets a row with its detail and nothing to expand, so no proof is silently dropped. Rows of a file come in the order of `files`, then hunks. The 500-line limit applies only to mechanical cards; `DiffView` always shows every line.
+- **Line endings.** A trailing `\r` is removed from the displayed text. A line is marked "CRLF" only when its hunk mixes endings, so a CRLF file isn't noisy, but a line whose only change is its ending doesn't look unchanged.
+- **Colors.** Themes are `github-light-default` and `github-dark-default`, the Primer colors the tokens already use. Two light syntax colors (comments, function names) are darkened to meet 4.5:1 on the diff backgrounds, and `highlight.test.ts` checks every theme color on the surface and both line backgrounds. Changed words drop their syntax color and use `--color-text`, because syntax colors don't all meet AA on the stronger word backgrounds. Text in a theme's default color is left unstyled, and neighboring tokens with one style merge, so a big hunk renders fewer elements.
+- **Languages.** 33 Shiki grammars, picked by the tree-sitter name (`c_sharp` → `csharp`), then by extension or basename (`Dockerfile`, `Makefile`). Anything else is plain text. Lines over 1,000 characters aren't tokenized, and lines over 500 aren't word-diffed.
+- **Bundle.** Shiki's core, the JavaScript regex engine, the themes and each grammar are lazy chunks; nothing loads until a card needs highlighting, and there's no WASM. A throwaway build importing `DiffView` gave a 16 KB entry chunk and 2.7 MB of lazy chunks. The C++ grammar alone is 800 KB, so once stage 15 imports the diff view, `pnpm build` will print Vite's 500 KB chunk-size warning. Raise `build.chunkSizeWarningLimit` or drop grammars from `GRAMMARS` in `highlight.ts`. Stage 12: the license notices will need `shiki` and `@shikijs/*` (MIT) once they're bundled.
+- **Performance** (Apple M1 Pro, 16 GB; headless Chrome for Testing 1243 driven by Playwright, because the app's browser pane doesn't render frames while it's hidden). Scrolling through the playground's ~2,000-line hunk at 100 px per frame took 407 frames, none over 16.8 ms, with no long tasks. In dev mode, the playground's first render (all cases, about 40,000 elements) is one ~600 ms task, and highlighting is one ~135 ms task. A production build wasn't measured, because no page imports the diff view yet.
+- **Playground.** `/dev/diff`. The diff is parsed and proved by the domain code; the formatting proof is hand-written, since it needs tree-sitter. The CRLF hunk in `config/app.ini` shows up both as a logic card and in the mechanical group (it has a line-endings proof), which the real pipeline wouldn't do. The playground hand-picks its cards to show the CRLF mark on both.
+- **Outside this stage's paths:**
+  - `.visually-hidden` is defined in `diff.css`; stage 13 may want it in `styles/base.css`.
+  - `/favicon.ico` is a 404 in dev (no icon in `web/index.html`).
+  - Biome fails locally when `.claude/worktrees/` holds another checkout with its own `biome.json` ("nested root configuration"). Adding `"!!.claude"` to `files.includes` in `biome.json` (stage 01) would fix it; CI isn't affected.
