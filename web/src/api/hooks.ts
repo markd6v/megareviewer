@@ -35,6 +35,7 @@ const LOADING = { data: null, error: null, loading: true } as const;
 const useQuery = <T>(load: () => Promise<Result<T, ApiError>>) => {
   const [state, setState] = useState<QueryState<T>>(LOADING);
   const [generation, setGeneration] = useState(0);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: a new generation reloads.
   useEffect(() => {
     let current = true;
     setState((previous) => ({ ...previous, loading: true }));

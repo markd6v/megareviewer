@@ -39,6 +39,7 @@ export const PullRequestList = ({
       {items === null ? (
         <ul className="pr-rows" aria-busy="true" aria-label={`Loading ${title.toLowerCase()}`}>
           {Array.from({ length: SKELETON_ROWS }, (_, index) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: placeholders have nothing else.
             <li key={index} className="pr-row skeleton" />
           ))}
         </ul>
