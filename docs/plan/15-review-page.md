@@ -133,9 +133,9 @@ With stage 13's mock fixtures:
 
 ## Definition of done
 
-- [ ] The whole flow works against the mock API: open an analysis, follow the tour, give verdicts, publish.
-- [ ] Every keyboard shortcut works.
-- [ ] Light and dark themes checked by eye.
+- [x] The whole flow works against the mock API: open an analysis, follow the tour, give verdicts, publish.
+- [x] Every keyboard shortcut works.
+- [x] Light and dark themes checked by eye.
 
 ## Open issues
 
@@ -143,4 +143,17 @@ _None yet._
 
 ## Notes for later stages
 
-_None yet._
+Where the code differs from or adds to this doc.
+
+- **Running it.** `pnpm dev:web:mock`, open a PR from the picker. In the mock, PR number 500 (e.g. `https://github.com/acme/shop/pull/500`) fails at the risk stage, and its retry succeeds. Checked by hand at 1400 px in light and dark: the mock flow from a running analysis to publishing, the failed state and retry, and `pnpm build` served by fake mode with `--static dist/web` under the server's CSP, publishing to the fake host, with no console errors. The browser pane's key tool can't send `?`, so that one was checked with a dispatched `keydown`; every other shortcut was pressed for real.
+- **Files.** `ReviewPage.tsx` holds the states and the navigation; `model.ts` has the pure parts (hunk lookup, reading order, tour entries); `useVerdicts.ts` the optimistic saves. The other components are named as in this doc, plus `ReviewHeader`, `MainArea`, `ProgressStrip`, `UsageFooter`, `Dialog` and `ShortcutsDialog`.
+- **A retry can return the same ID.** The server keeps the ID when the head SHA hasn't changed, and `useAnalysisView` stops listening after `done`. So when a retry or a re-analysis returns the current ID, the page remounts and subscribes afresh instead of refetching once.
+- **Verdicts wait for a complete analysis.** The API answers `analysis-not-complete` while the tour still runs, so decisions show read-only until then, with a line saying so.
+- **Fail safe.** A hunk the risk pass hasn't classified yet shows as logic ("Not classified yet."). Non-mechanical hunks the tour leaves out get an extra step, "Changes the tour left out". Ticket keys Jira didn't return show as `KEY · not fetched`. Before the tour exists, and when the analysis failed without one, every non-mechanical hunk shows in path order, followed by the mechanical group and file notices.
+- **Mechanical entry.** Always the last tour entry. Its count is mechanical hunks plus file-level proofs, which is what `MechanicalGroup` lists.
+- **Shortcuts.** The selected decision is the one in focus. `a` and `r` toggle like the buttons: pressing again returns to pending. `n` and `p` leave a focus and move through the tour. Shortcuts are off while a dialog is open; dialogs close on `Esc` themselves.
+- **Scrolling.** Choosing a step, a decision or a mismatch scrolls the main area to its top; the tour arriving on its own doesn't move the page. The sidebar is sticky and scrolls by itself, so cards keep stage 14's `scroll-margin-top`.
+- **Publishing.** Opening the dialog first saves comments still waiting for their pause, so the preview includes them. **Publish** stays disabled until a preview has loaded, and reads **Retry** after a failure.
+- **Usage.** "Tokens in" counts uncached input including cache writes; cache reads are listed apart.
+- **Outside this stage's paths:** the failing scenario in `web/dev/` (`mock-routes.ts`, `progress.ts`, and their test), as stage 13's notes invited.
+- **Stage 17:** `pnpm build` now prints Vite's 500 KB warning, for the lazy C++ grammar chunk only (797 KB), as stage 14 predicted. `web/vite.config.ts` (stage 13's) needs `build.chunkSizeWarningLimit` raised or the grammar dropped from `GRAMMARS` in `highlight.ts`. The license notices already list `shiki` and `@shikijs/*`.
