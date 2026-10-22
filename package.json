@@ -3,6 +3,12 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "bin": {
+    "megareviewer": "dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
   "packageManager": "pnpm@10.34.7",
   "engines": {
     "node": ">=24"
@@ -16,7 +22,8 @@
     "check": "node scripts/check-no-runtime-deps.ts && pnpm typecheck && pnpm lint && pnpm deps && pnpm test",
     "dev:server": "node --watch src/cli/main.ts",
     "dev:web": "vite --config web/vite.config.ts",
-    "build": "node -e \"process.exit(0)\""
+    "dev:fake": "node src/cli/dev/fake-main.ts",
+    "build": "node scripts/build.ts"
   },
   "devDependencies": {
     "@anthropic-ai/sdk": "0.137.0",
