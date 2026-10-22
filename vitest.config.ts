@@ -16,9 +16,11 @@ export default defineConfig({
       {
         test: {
           name: "web",
-          include: ["web/src/**/*.test.{ts,tsx}"],
+          include: ["web/{src,dev}/**/*.test.{ts,tsx}"],
           environment: "jsdom",
-          setupFiles,
+          setupFiles: [...setupFiles, "web/src/testing/setup.ts"],
+          // Vitest empties CSS imports, `?raw` ones too; the token contrast test reads this one.
+          css: { include: [/tokens\.css/] },
         },
       },
     ],

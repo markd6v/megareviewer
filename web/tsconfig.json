@@ -5,8 +5,8 @@
     "moduleResolution": "bundler",
     "lib": ["dom", "dom.iterable", "es2024"],
     "jsx": "react-jsx",
-    "types": []
+    "types": ["vite/client"]
   },
-  "include": ["src", "dev", "../contracts", "../src/domain"],
+  "include": ["src", "../contracts", "../src/domain"],
   "exclude": ["../src/domain/**/*.test.ts"]
 }

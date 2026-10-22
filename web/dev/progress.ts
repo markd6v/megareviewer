@@ -1,0 +1,45 @@
+import { type Analysis, StageName, type StageStatus } from "../../src/domain/review/index.ts";
+
+const STAGES = StageName.options;
+
+/**
+ * A complete analysis as it looks while running, after its first `stagesDone` stages: each result
+ * appears once the stage that produces it is done, the way the server fills it in.
+ */
+export const analysisInProgress = (analysis: Analysis, stagesDone: number): Analysis => {
+  if (stagesDone >= STAGES.length) return analysis;
+  const status = (stage: StageName): StageStatus => {
+    const index = STAGES.indexOf(stage);
+    return index < stagesDone ? "done" : index === stagesDone ? "running" : "pending";
+  };
+  const done = (stage: StageName): boolean => status(stage) === "done";
+  return {
+    ...analysis,
+    status: "running",
+    stages: {
+      collect: status("collect"),
+      prep: status("prep"),
+      intent: status("intent"),
+      risk: status("risk"),
+      decisions: status("decisions"),
+      tour: status("tour"),
+    },
+    pullRequest: done("collect") ? analysis.pullRequest : null,
+    tickets: done("collect") ? analysis.tickets : [],
+    missingTicketKeys: done("collect") ? analysis.missingTicketKeys : [],
+    files: done("prep") ? analysis.files : [],
+    proofs: done("prep") ? analysis.proofs : [],
+    callGraph: done("prep") ? analysis.callGraph : [],
+    intent: done("intent") ? analysis.intent : null,
+    risk: done("risk")
+      ? analysis.risk
+      : done("prep")
+        ? analysis.risk.filter((assessment) => assessment.source === "proof")
+        : [],
+    decisions: done("decisions") ? analysis.decisions : [],
+    tour: done("tour") ? analysis.tour : null,
+    warnings: [],
+    usage: analysis.usage.filter((usage) => done(usage.pass)),
+    error: null,
+  };
+};
