@@ -1,6 +1,6 @@
 # Stage 13: Web shell, API client and PR picker
 
-**Status:** In progress (branch stage/13-web-shell)
+**Status:** Done (pushed to main without a PR; CI green on c6e2cb7)
 **Depends on:** 02
 **Unblocks:** 15
 **Owns:** `web/` except `web/src/diff/` (stage 14) and `web/src/pages/review/` (stage 15; this stage creates only a placeholder there)
