@@ -1,6 +1,6 @@
 # Stage 12: CLI, composition root and packaging
 
-**Status:** Not started
+**Status:** In progress (branch stage/12-cli-and-packaging, on top of stage/11-http-api)
 **Depends on:** 04, 05, 06, 07, 08, 09, 11
 **Unblocks:** 17
 **Owns:** `src/cli/`, `scripts/build.ts`, `scripts/check-package.ts`, `package.json` (`bin`, `files`, `build` script)
