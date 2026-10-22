@@ -19,13 +19,19 @@ import {
   StageName,
 } from "../../src/domain/review/index.ts";
 import { fixtureAnalysisView, fixturePullRequests, fixtureStatus } from "./fixtures/index.ts";
-import { analysisInProgress } from "./progress.ts";
+import { analysisFailed, analysisInProgress } from "./progress.ts";
 
 /** The session token the mock accepts; open the UI with `?token=mock`. */
 export const MOCK_TOKEN = "mock";
 
 /** How long each simulated stage takes. */
 export const MOCK_STAGE_MS = 600;
+
+/** Starting an analysis for a PR with this number fails it at the risk stage; a retry succeeds. */
+export const MOCK_FAILING_PR_NUMBER = 500;
+
+const FAILING_STAGE: StageName = "risk";
+const FAILURE_MESSAGE = "The model's response didn't match the risk schema twice in a row";
 
 export interface MockRequest {
   readonly method: string;
@@ -102,12 +108,17 @@ export const createMockApi = (
   const fixture = fixtureAnalysisView.analysis;
 
   let stagesDone = StageName.options.length;
+  let failAt: StageName | null = null;
+  let failed = false;
   let timer: ReturnType<typeof setInterval> | null = null;
   const verdicts = new Map<DecisionId, DecisionVerdict>();
   let publication: PublicationReceipt | null = null;
   const listeners = new Set<(event: MockEvent) => void>();
 
-  const analysis = () => analysisInProgress(fixture, stagesDone);
+  const analysis = () =>
+    failed && failAt !== null
+      ? analysisFailed(fixture, failAt, FAILURE_MESSAGE)
+      : analysisInProgress(fixture, stagesDone);
   const view = (): AnalysisView => ({
     ...fixtureAnalysisView,
     analysis: analysis(),
@@ -118,8 +129,20 @@ export const createMockApi = (
     for (const listener of listeners) listener(event);
   };
 
+  const stop = () => {
+    if (timer !== null) clearInterval(timer);
+    timer = null;
+    emit({ event: "done", data: {} });
+  };
+
   const advance = () => {
     const finished = StageName.options[stagesDone];
+    if (finished !== undefined && finished === failAt) {
+      failed = true;
+      emit({ event: "updated", data: { stage: finished, status: "failed" } });
+      stop();
+      return;
+    }
     stagesDone += 1;
     if (finished !== undefined)
       emit({ event: "updated", data: { stage: finished, status: "done" } });
@@ -128,14 +151,14 @@ export const createMockApi = (
       emit({ event: "updated", data: { stage: next, status: "running" } });
       return;
     }
-    if (timer !== null) clearInterval(timer);
-    timer = null;
-    emit({ event: "done", data: {} });
+    stop();
   };
 
-  const simulate = () => {
+  const simulate = (failing: StageName | null) => {
     if (timer !== null) return;
     stagesDone = 0;
+    failAt = failing;
+    failed = false;
     verdicts.clear();
     publication = null;
     timer = setInterval(advance, stageMs);
@@ -174,13 +197,19 @@ export const createMockApi = (
         const name = host === "github" ? "GitHub" : "Bitbucket";
         return failure("host-not-configured", `${name} isn't configured`);
       }
-      simulate();
+      simulate(ref.value.number === MOCK_FAILING_PR_NUMBER ? FAILING_STAGE : null);
       const response: AnalysisIdResponse = { analysisId: fixture.id };
       return success(response);
     },
     getAnalysis: ({ id }) => findAnalysis(id) ?? success(view()),
-    retryAnalysis: ({ id }) =>
-      findAnalysis(id) ?? failure("bad-request", "Only a failed analysis can be retried"),
+    retryAnalysis: ({ id }) => {
+      const missing = findAnalysis(id);
+      if (missing !== null) return missing;
+      if (!failed) return failure("bad-request", "Only a failed analysis can be retried");
+      simulate(null);
+      const response: AnalysisIdResponse = { analysisId: fixture.id };
+      return success(response);
+    },
     putVerdict: (params, body) => {
       const missing = findAnalysis(params.id) ?? requireComplete();
       if (missing !== null) return missing;

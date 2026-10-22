@@ -10,13 +10,14 @@ import { DecisionVerdict, Publication, PublicationReceipt } from "../../src/doma
 import { fixtureAnalysisView } from "./fixtures/index.ts";
 import {
   createMockApi,
+  MOCK_FAILING_PR_NUMBER,
   MOCK_STAGE_MS,
   MOCK_TOKEN,
   type MockApi,
   type MockEvent,
   type MockRequest,
 } from "./mock-routes.ts";
-import { analysisInProgress } from "./progress.ts";
+import { analysisFailed, analysisInProgress } from "./progress.ts";
 
 const NOW = "2026-10-22T10:00:00Z";
 const id = fixtureAnalysisView.analysis.id;
@@ -182,6 +183,28 @@ describe("mock API", () => {
   it("can't retry an analysis that didn't fail", () => {
     expect(errorCode(api.handle(request("POST", `/api/analyses/${id}/retry`)))).toBe("bad-request");
   });
+
+  it("fails the analysis of the failing PR at the risk stage, and retries it", () => {
+    const url = `https://github.com/acme/shop/pull/${MOCK_FAILING_PR_NUMBER}`;
+    api.handle(request("POST", "/api/analyses", { url }));
+    const events: MockEvent[] = [];
+    api.events(request("GET", `/api/analyses/${id}/events`), (event) => events.push(event));
+    const view = () => AnalysisView.parse(api.handle(request("GET", `/api/analyses/${id}`)).body);
+
+    vi.advanceTimersByTime(MOCK_STAGE_MS * 4);
+    expect(events.slice(-2)).toEqual([
+      { event: "updated", data: { stage: "risk", status: "failed" } },
+      { event: "done", data: {} },
+    ]);
+    expect(view().analysis.status).toBe("failed");
+    expect(view().analysis.error?.stage).toBe("risk");
+
+    const retried = api.handle(request("POST", `/api/analyses/${id}/retry`));
+    expect(AnalysisIdResponse.parse(retried.body).analysisId).toBe(id);
+    expect(view().analysis.status).toBe("running");
+    vi.advanceTimersByTime(MOCK_STAGE_MS * 6);
+    expect(view().analysis).toEqual(fixtureAnalysisView.analysis);
+  });
 });
 
 describe("analysisInProgress", () => {
@@ -198,6 +221,16 @@ describe("analysisInProgress", () => {
     expect(AnalysisView.safeParse({ ...fixtureAnalysisView, analysis: afterPrep }).success).toBe(
       true,
     );
+  });
+
+  it("keeps earlier stages' results when a stage fails", () => {
+    const failed = analysisFailed(analysis, "risk", "Bad output");
+    expect(failed.status).toBe("failed");
+    expect(failed.stages).toMatchObject({ intent: "done", risk: "failed", tour: "pending" });
+    expect(failed.intent).toEqual(analysis.intent);
+    expect(failed.decisions).toEqual([]);
+    expect(failed.error).toEqual({ stage: "risk", code: "model-error", message: "Bad output" });
+    expect(AnalysisView.safeParse({ ...fixtureAnalysisView, analysis: failed }).success).toBe(true);
   });
 
   it("is the analysis itself once every stage is done", () => {

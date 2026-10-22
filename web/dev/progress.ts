@@ -43,3 +43,14 @@ export const analysisInProgress = (analysis: Analysis, stagesDone: number): Anal
     error: null,
   };
 };
+
+/** The analysis as it looks after `stage` failed: what earlier stages produced, and the error. */
+export const analysisFailed = (analysis: Analysis, stage: StageName, message: string): Analysis => {
+  const running = analysisInProgress(analysis, STAGES.indexOf(stage));
+  return {
+    ...running,
+    status: "failed",
+    stages: { ...running.stages, [stage]: "failed" },
+    error: { stage, code: "model-error", message },
+  };
+};
