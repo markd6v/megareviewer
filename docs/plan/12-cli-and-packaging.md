@@ -1,6 +1,6 @@
 # Stage 12: CLI, composition root and packaging
 
-**Status:** In progress (branch stage/12-cli-and-packaging, on top of stage/11-http-api)
+**Status:** In progress (on main; CI green on 03810d5; `dist/web/` waits for stage 13)
 **Depends on:** 04, 05, 06, 07, 08, 09, 11
 **Unblocks:** 17
 **Owns:** `src/cli/`, `scripts/build.ts`, `scripts/check-package.ts`, `package.json` (`bin`, `files`, `build` script)
@@ -136,7 +136,7 @@ Run in CI after `pnpm build`:
 ## Definition of done
 
 - [ ] `pnpm build` produces `dist/cli.js`, `dist/web/`, `dist/grammars/` and the license file. Everything but `dist/web/`: see Open issues.
-- [ ] `scripts/check-package.ts` passes in CI. Passes locally (1.4 MB tarball); CI hasn't run, the branch isn't pushed.
+- [x] `scripts/check-package.ts` passes in CI (green on 03810d5; 1.4 MB tarball).
 - [x] Manually: `node dist/cli.js` with a real GitHub token opens the picker; `doctor` reports accurately. With the `gh` token, `/api/status` shows the user and `/api/pull-requests` lists their PRs; there's no picker to open yet. `doctor` was right about GitHub, the missing Anthropic credentials, and a stray `BITBUCKET_WORKSPACE`.
 - [x] `pnpm dev:fake` serves a working app against fixtures. The API only, until there's a UI to pass with `--static`.
 

@@ -1,6 +1,6 @@
 # Stage 11: HTTP API
 
-**Status:** In progress (branch stage/11-http-api)
+**Status:** Done (pushed to main without a PR; CI green on 03810d5)
 **Depends on:** 10
 **Unblocks:** 12
 **Owns:** `src/adapters/http/`
