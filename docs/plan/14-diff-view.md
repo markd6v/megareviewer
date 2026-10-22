@@ -1,6 +1,6 @@
 # Stage 14: Diff view component
 
-**Status:** In progress (branch stage/14-diff-view)
+**Status:** Done (pushed to main without a PR; CI green on b25ba1e)
 **Depends on:** 02
 **Unblocks:** 15
 **Owns:** `web/src/diff/`
