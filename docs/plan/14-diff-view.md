@@ -1,6 +1,6 @@
 # Stage 14: Diff view component
 
-**Status:** Not started
+**Status:** In progress (branch stage/14-diff-view)
 **Depends on:** 02
 **Unblocks:** 15
 **Owns:** `web/src/diff/`
