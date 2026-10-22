@@ -1,6 +1,6 @@
 # Stage 15: Review page and publishing
 
-**Status:** In progress (branch stage/15-review-page)
+**Status:** Done (pushed to main without a PR; CI green on 6fd6394)
 **Depends on:** 13, 14
 **Unblocks:** 17
 **Owns:** `web/src/pages/review/`
