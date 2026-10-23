@@ -1,0 +1,30 @@
+import type { CaseLabels } from "../../labels.ts";
+
+export const labels: CaseLabels = {
+  risk: {
+    h_b5e69834271ab368: "contract", // retries calls to the payment provider
+  },
+  decisions: [
+    {
+      description:
+        "Retries charges without an idempotency key, so a charge that succeeded but timed out or errored can be made twice",
+      mustHave: true,
+    },
+    {
+      description:
+        "Retries every error, including declines and other 4xx responses that won't succeed on retry",
+      mustHave: true,
+    },
+    {
+      description: "Waits a fixed 1 second between up to 10 attempts (no backoff)",
+      mustHave: true,
+    },
+  ],
+  mismatches: [
+    {
+      kind: "contradicts",
+      description:
+        "The description promises exponential backoff from 200 ms and at most 5 attempts; the code waits a fixed 1 s and tries up to 10 times",
+    },
+  ],
+};

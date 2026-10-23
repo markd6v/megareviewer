@@ -1,0 +1,14 @@
+{
+  "name": "@acme/shop-core",
+  "version": "3.4.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "dependencies": {
+    "date-fns": "2.30.0",
+    "zod": "3.23.8"
+  },
+  "devDependencies": {
+    "typescript": "5.6.3",
+    "vitest": "2.1.4"
+  }
+}

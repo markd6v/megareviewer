@@ -1,0 +1,85 @@
+import { createAnalysisEvents } from "../src/application/events/index.ts";
+import type { AnalysisModel, CodeParser, Logger } from "../src/application/ports/index.ts";
+import {
+  FakeGitHost,
+  FakeTicketSource,
+  InMemoryAnalysisStore,
+  type PullRequestFixture,
+} from "../src/application/testing/index.ts";
+import { createUseCases } from "../src/application/use-cases/index.ts";
+import type { Analysis } from "../src/domain/review/index.ts";
+import { err, ok, type Result } from "../src/domain/shared/index.ts";
+
+export const systemClock = { now: () => new Date().toISOString() };
+
+export const quietLogger = (onProblem: (line: string) => void = () => {}): Logger => ({
+  debug: () => {},
+  info: () => {},
+  warn: (message, fields) => onProblem(`warn: ${message} ${JSON.stringify(fields ?? {})}`),
+  error: (message, fields) => onProblem(`error: ${message} ${JSON.stringify(fields ?? {})}`),
+});
+
+export interface AnalyzeOptions {
+  readonly model: AnalysisModel;
+  readonly parser: CodeParser;
+  readonly logger: Logger;
+  /** The whole analysis, from start to complete or failed. */
+  readonly timeoutMs: number;
+}
+
+/**
+ * Runs stage 10's pipeline on one case, as the CLI would: the case's PR on a fake host, its
+ * tickets in a fake Jira, the given model and parser, an in-memory store. Resolves with the
+ * analysis once it completes or fails; an error only when it didn't start or ran out of time.
+ */
+export const analyzeCase = async (
+  fixture: PullRequestFixture,
+  options: AnalyzeOptions,
+): Promise<Result<Analysis, string>> => {
+  const { host } = fixture.pullRequest.ref.repo;
+  const store = new InMemoryAnalysisStore();
+  const events = createAnalysisEvents();
+  const useCases = createUseCases(
+    {
+      hosts: { [host]: new FakeGitHost({ host, fixtures: [fixture], clock: systemClock }) },
+      tickets: new FakeTicketSource({ tickets: fixture.tickets }),
+      model: options.model,
+      modelConfigured: true,
+      store,
+      parser: options.parser,
+      events,
+      clock: systemClock,
+      logger: options.logger,
+    },
+    { version: "eval" },
+  );
+
+  const started = await useCases.startAnalysis(fixture.pullRequest.url);
+  if (!started.ok) return err(`${started.error.code}: ${started.error.message}`);
+  const id = started.value.analysisId;
+
+  const finished = async (): Promise<Analysis | null> => {
+    const analysis = await store.getAnalysis(id);
+    return analysis !== null && analysis.status !== "running" ? analysis : null;
+  };
+
+  let unsubscribe = () => {};
+  let timer: NodeJS.Timeout | undefined;
+  try {
+    return await new Promise<Result<Analysis, string>>((resolve, reject) => {
+      const check = () => finished().then((a) => a && resolve(ok(a)), reject);
+      // No buffering in the events, so check once after subscribing too.
+      unsubscribe = events.subscribe(id, (event) => {
+        if (event.type === "done") check();
+      });
+      check();
+      timer = setTimeout(
+        () => resolve(err(`timed out after ${options.timeoutMs / 1000} s`)),
+        options.timeoutMs,
+      );
+    });
+  } finally {
+    unsubscribe();
+    clearTimeout(timer);
+  }
+};

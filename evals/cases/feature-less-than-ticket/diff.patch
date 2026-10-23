@@ -1,0 +1,47 @@
+diff --git a/src/admin/orders-csv.ts b/src/admin/orders-csv.ts
+new file mode 100644
+index 0000000..2dac793
+--- /dev/null
++++ b/src/admin/orders-csv.ts
+@@ -0,0 +1,16 @@
++import type { Order } from "../services/orders.ts";
++
++const HEADER = ["id", "created", "total", "status"];
++
++/** One line per order, totals in currency units. */
++export function ordersCsv(orders: readonly Order[]): string {
++  const rows = orders.map((order) =>
++    [
++      order.id,
++      order.createdAt.toISOString().slice(0, 10),
++      (order.totalCents / 100).toFixed(2),
++      order.status,
++    ].join(","),
++  );
++  return [HEADER.join(","), ...rows].join("\n");
++}
+diff --git a/src/admin/routes.ts b/src/admin/routes.ts
+index cfa26ec..9936be8 100644
+--- a/src/admin/routes.ts
++++ b/src/admin/routes.ts
+@@ -1,6 +1,7 @@
+ import { Router } from "express";
+ import { requireAdmin } from "../middleware/require-admin.ts";
+-import { listOrders } from "../services/orders.ts";
++import { allOrders, listOrders } from "../services/orders.ts";
++import { ordersCsv } from "./orders-csv.ts";
+ 
+ export const adminRouter = Router();
+ adminRouter.use(requireAdmin);
+@@ -9,3 +10,11 @@ adminRouter.get("/admin/orders", async (req, res) => {
+   const page = Number(req.query.page ?? 1);
+   res.json(await listOrders({ page, pageSize: 50 }));
+ });
++
++adminRouter.get("/admin/orders/export.csv", async (_req, res) => {
++  const orders = await allOrders();
++  res
++    .type("text/csv")
++    .attachment("orders.csv")
++    .send(ordersCsv(orders));
++});

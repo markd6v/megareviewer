@@ -6,6 +6,9 @@
       "!!**/dist",
       "!!**/coverage",
       "!!evals/results",
+      "!!evals/cases/*/files",
+      "!!**/test-results",
+      "!!**/playwright-report",
       "!**/fixtures/**/*.json",
       "!.idea",
       "!!.claude"

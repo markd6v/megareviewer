@@ -1,0 +1,68 @@
+diff --git a/migrations/0007_add_account_region.sql b/migrations/0007_add_account_region.sql
+new file mode 100644
+index 0000000..cbade07
+--- /dev/null
++++ b/migrations/0007_add_account_region.sql
+@@ -0,0 +1,4 @@
++-- ACC-310: every account records the region its data lives in.
++ALTER TABLE accounts ADD COLUMN region text NOT NULL DEFAULT 'us-east-1';
++
++CREATE INDEX accounts_region_idx ON accounts (region);
+diff --git a/src/accounts/repository.ts b/src/accounts/repository.ts
+index 109ae7c..a099104 100644
+--- a/src/accounts/repository.ts
++++ b/src/accounts/repository.ts
+@@ -1,9 +1,12 @@
+ import type { Pool } from "pg";
+ 
++export type Region = "us-east-1" | "eu-west-1";
++
+ export interface Account {
+   id: string;
+   name: string;
+   ownerEmail: string;
++  region: Region;
+   createdAt: Date;
+ }
+ 
+@@ -11,6 +14,7 @@ interface AccountRow {
+   id: string;
+   name: string;
+   owner_email: string;
++  region: Region;
+   created_at: Date;
+ }
+ 
+@@ -18,16 +22,17 @@ const toAccount = (row: AccountRow): Account => ({
+   id: row.id,
+   name: row.name,
+   ownerEmail: row.owner_email,
++  region: row.region,
+   createdAt: row.created_at,
+ });
+ 
+ export async function createAccount(
+   db: Pool,
+-  input: { name: string; ownerEmail: string },
++  input: { name: string; ownerEmail: string; region: Region },
+ ): Promise<Account> {
+   const { rows } = await db.query<AccountRow>(
+-    "INSERT INTO accounts (name, owner_email) VALUES ($1, $2) RETURNING *",
+-    [input.name, input.ownerEmail],
++    "INSERT INTO accounts (name, owner_email, region) VALUES ($1, $2, $3) RETURNING *",
++    [input.name, input.ownerEmail, input.region],
+   );
+   const [row] = rows;
+   if (!row) throw new Error("insert returned no row");
+diff --git a/src/accounts/routes.ts b/src/accounts/routes.ts
+index 8a1d639..c96fe28 100644
+--- a/src/accounts/routes.ts
++++ b/src/accounts/routes.ts
+@@ -6,6 +6,7 @@ import { createAccount, findAccount } from "./repository.ts";
+ const CreateAccount = z.object({
+   name: z.string().min(1).max(100),
+   ownerEmail: z.string().email(),
++  region: z.enum(["us-east-1", "eu-west-1"]).default("us-east-1"),
+ });
+ 
+ export const accountsRouter = Router();

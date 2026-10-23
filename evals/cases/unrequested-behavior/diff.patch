@@ -1,0 +1,72 @@
+diff --git a/src/auth/login.ts b/src/auth/login.ts
+index 48c1934..90c2655 100644
+--- a/src/auth/login.ts
++++ b/src/auth/login.ts
+@@ -1,10 +1,14 @@
+ import type { Request, Response } from "express";
+ import { z } from "zod";
++import { analytics } from "../analytics.ts";
+ import { checkPassword, createSession } from "./sessions.ts";
+ 
++const REMEMBER_ME_MS = 30 * 24 * 60 * 60 * 1000;
++
+ const LoginBody = z.object({
+   email: z.string().email(),
+   password: z.string().min(1),
++  rememberMe: z.boolean().default(false),
+ });
+ 
+ export async function login(req: Request, res: Response): Promise<void> {
+@@ -18,7 +22,20 @@ export async function login(req: Request, res: Response): Promise<void> {
+     res.status(401).json({ error: "wrong email or password" });
+     return;
+   }
+-  const session = await createSession(user.id);
+-  res.cookie("session", session.token, { httpOnly: true, secure: true, sameSite: "lax" });
++  const session = await createSession(user.id, {
++    expiresInMs: body.data.rememberMe ? REMEMBER_ME_MS : undefined,
++  });
++  res.cookie("session", session.token, {
++    httpOnly: true,
++    secure: true,
++    sameSite: "lax",
++    ...(body.data.rememberMe && { maxAge: REMEMBER_ME_MS }),
++  });
++  analytics.track("login", {
++    userId: user.id,
++    email: user.email,
++    ip: req.ip,
++    rememberMe: body.data.rememberMe,
++  });
+   res.status(204).end();
+ }
+diff --git a/web/login/LoginForm.tsx b/web/login/LoginForm.tsx
+index f81dacd..a4c3d68 100644
+--- a/web/login/LoginForm.tsx
++++ b/web/login/LoginForm.tsx
+@@ -3,15 +3,24 @@ import { useState } from "react";
+ export function LoginForm({ onSubmit }: { onSubmit: (body: object) => void }) {
+   const [email, setEmail] = useState("");
+   const [password, setPassword] = useState("");
++  const [rememberMe, setRememberMe] = useState(false);
+   return (
+     <form
+       onSubmit={(event) => {
+         event.preventDefault();
+-        onSubmit({ email, password });
++        onSubmit({ email, password, rememberMe });
+       }}
+     >
+       <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+       <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
++      <label>
++        <input
++          type="checkbox"
++          checked={rememberMe}
++          onChange={(e) => setRememberMe(e.target.checked)}
++        />
++        Remember me for 30 days
++      </label>
+       <button type="submit">Sign in</button>
+     </form>
+   );

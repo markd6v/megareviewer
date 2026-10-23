@@ -1,0 +1,30 @@
+{
+  "ref": {
+    "repo": {
+      "host": "github",
+      "owner": "sindresorhus",
+      "repo": "ky"
+    },
+    "number": 874
+  },
+  "url": "https://github.com/sindresorhus/ky/pull/874",
+  "title": "Improve `Retry-After` handling",
+  "description": "",
+  "author": {
+    "id": "sindresorhus",
+    "name": "sindresorhus"
+  },
+  "sourceBranch": "ss/improve-retry-after-handling",
+  "targetBranch": "main",
+  "baseSha": "6edddd986f2f6a9c7d91e851d9b9a48df439d328",
+  "headSha": "6aa73789decd93e3bb418ab91b52a586f350548e",
+  "commits": [
+    {
+      "sha": "6aa73789decd93e3bb418ab91b52a586f350548e",
+      "message": "Improve `Retry-After` handling",
+      "author": "Sindre Sorhus"
+    }
+  ],
+  "createdAt": "2026-07-06T22:16:13Z",
+  "updatedAt": "2026-07-06T22:20:41Z"
+}

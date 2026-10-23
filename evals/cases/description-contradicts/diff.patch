@@ -1,0 +1,32 @@
+diff --git a/src/payments/client.ts b/src/payments/client.ts
+index bb330d3..3d3b533 100644
+--- a/src/payments/client.ts
++++ b/src/payments/client.ts
+@@ -21,6 +21,11 @@ export class PaymentsError extends Error {
+   }
+ }
+ 
++const MAX_ATTEMPTS = 10;
++const RETRY_DELAY_MS = 1000;
++
++const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
++
+ async function postCharge(charge: Charge): Promise<ChargeResult> {
+   const response = await fetch(`${config.paymentsUrl}/v1/charges`, {
+     method: "POST",
+@@ -37,5 +42,14 @@ async function postCharge(charge: Charge): Promise<ChargeResult> {
+ }
+ 
+ export async function charge(request: Charge): Promise<ChargeResult> {
+-  return postCharge(request);
++  let lastError: unknown;
++  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
++    try {
++      return await postCharge(request);
++    } catch (error) {
++      lastError = error;
++      if (attempt < MAX_ATTEMPTS) await sleep(RETRY_DELAY_MS);
++    }
++  }
++  throw lastError;
+ }

@@ -1,0 +1,31 @@
+diff --git a/docs/configuration.md b/docs/configuration.md
+index 03f56ab..6acb99e 100644
+--- a/docs/configuration.md
++++ b/docs/configuration.md
+@@ -6,3 +6,4 @@
+ | `DATABASE_URL` | yes | | Postgres connection string |
+ | `PAYMENTS_URL` | no | `https://api.payments.example.com` | Payment provider API |
+ | `PAYMENTS_API_KEY` | yes | | Payment provider secret key |
++| `PAYMENTS_TIMEOUT_MS` | no | `5000` | How long a refund request may take before it's aborted |
+diff --git a/src/config.ts b/src/config.ts
+index 1aee89b..433793f 100644
+--- a/src/config.ts
++++ b/src/config.ts
+@@ -9,4 +9,5 @@ export const config = {
+   databaseUrl: required("DATABASE_URL"),
+   paymentsUrl: process.env.PAYMENTS_URL ?? "https://api.payments.example.com",
+   paymentsApiKey: required("PAYMENTS_API_KEY"),
++  paymentsTimeoutMs: Number(process.env.PAYMENTS_TIMEOUT_MS ?? 5000),
+ };
+diff --git a/src/payments/refunds.ts b/src/payments/refunds.ts
+index 6dce542..333e5dd 100644
+--- a/src/payments/refunds.ts
++++ b/src/payments/refunds.ts
+@@ -8,6 +8,7 @@ export async function refund(chargeId: string, amountCents: number): Promise<voi
+       "content-type": "application/json",
+     },
+     body: JSON.stringify({ charge: chargeId, amount: amountCents }),
++    signal: AbortSignal.timeout(config.paymentsTimeoutMs),
+   });
+   if (!response.ok) throw new Error(`refund failed with ${response.status}`);
+ }

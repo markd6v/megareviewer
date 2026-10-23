@@ -8,7 +8,13 @@ export default defineConfig({
       {
         test: {
           name: "server",
-          include: ["src/**/*.test.ts", "contracts/**/*.test.ts", "scripts/**/*.test.ts"],
+          include: [
+            "src/**/*.test.ts",
+            "contracts/**/*.test.ts",
+            "scripts/**/*.test.ts",
+            // Not evals/cases/: their files/ hold other projects' code, tests included.
+            "evals/*.test.ts",
+          ],
           environment: "node",
           setupFiles,
         },

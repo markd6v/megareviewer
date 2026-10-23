@@ -1,0 +1,27 @@
+diff --git a/billing/summary.py b/billing/summary.py
+index 0416884..3b96a5f 100644
+--- a/billing/summary.py
++++ b/billing/summary.py
+@@ -16,7 +16,7 @@ def order_summary(items: list[LineItem]) -> dict[str, int]:
+     for item in items:
+         if item.active:
+             total += item.price_cents * item.quantity
+-            count += item.quantity
++        count += item.quantity
+     return {"total_cents": total, "item_count": count}
+ 
+ 
+diff --git a/billing/tax.py b/billing/tax.py
+index eb1293e..b98818f 100644
+--- a/billing/tax.py
++++ b/billing/tax.py
+@@ -1,7 +1,7 @@
+ TAX_RATES = {
+-    "DE": 0.19,   
++    "DE": 0.19,
+     "FR": 0.20,
+-    "NL": 0.21,  
++    "NL": 0.21,
+ }
+ 
+ 

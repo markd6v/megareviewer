@@ -1,0 +1,102 @@
+diff --git a/package.json b/package.json
+index 7c793e3..575b744 100644
+--- a/package.json
++++ b/package.json
+@@ -4,7 +4,7 @@
+   "type": "module",
+   "main": "dist/index.js",
+   "dependencies": {
+-    "date-fns": "2.30.0",
++    "date-fns": "4.1.0",
+     "zod": "3.23.8"
+   },
+   "devDependencies": {
+diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
+index e3e0872..258583c 100644
+--- a/pnpm-lock.yaml
++++ b/pnpm-lock.yaml
+@@ -9,33 +9,22 @@ importers:
+   .:
+     dependencies:
+       date-fns:
+-        specifier: 2.30.0
+-        version: 2.30.0
++        specifier: 4.1.0
++        version: 4.1.0
+       zod:
+         specifier: 3.23.8
+         version: 3.23.8
+ 
+ packages:
+ 
+-  '@babel/runtime@7.26.0':
+-    resolution: {integrity: sha512-FDSOghenHTiToteC/QRlv2q3DhPZ/oOXTBoirfWNx1Cx3TMVcGWQtMMmQcSvb/JjpNeGzx8Pq/b4fKEJuWm1sw==}
+-    engines: {node: '>=6.9.0'}
+-
+-  date-fns@2.30.0:
+-    resolution: {integrity: sha512-fnULvOpxnC5/Vg3NCiWelDsLiUc9bRwAPs/+LfTLNvetFCtCTN+yQz15C/fs4AwX1R9K5GLtLfn8QW+dWisaAw==}
+-    engines: {node: '>=0.11'}
++  date-fns@4.1.0:
++    resolution: {integrity: sha512-Ukq0owbQXxa/U3EGtsdVBkR1w7KOQ5gIBqdH2hkvknzZPYvBxb/aa6E8L7tmjFtkwZBu3UXBbjIgPo/Ez4xaNg==}
+ 
+   zod@3.23.8:
+     resolution: {integrity: sha512-XBx9AXhXktjUqnepgTiE5flcKIYWi/rme0Eaj+5Y0lftuGBq+jyRu/md4WnuxqgP1ubdpNCsYEYPxrzVHD8d6g==}
+ 
+ snapshots:
+ 
+-  '@babel/runtime@7.26.0':
+-    dependencies:
+-      regenerator-runtime: 0.14.1
+-
+-  date-fns@2.30.0:
+-    dependencies:
+-      '@babel/runtime': 7.26.0
++  date-fns@4.1.0: {}
+ 
+   zod@3.23.8: {}
+diff --git a/src/money/format.ts b/src/money/format.ts
+index 2a0e100..86112fd 100644
+--- a/src/money/format.ts
++++ b/src/money/format.ts
+@@ -1,6 +1,7 @@
+-/** Formats an amount in cents as dollars, e.g. 1999 → "$19.99". */
+-export function formatPrice(cents: number): string {
+-  const sign = cents < 0 ? "-" : "";
+-  const abs = Math.abs(cents);
+-  return `${sign}$${Math.floor(abs / 100)}.${String(abs % 100).padStart(2, "0")}`;
++/**
++ * Formats an amount in minor units in the given ISO 4217 currency,
++ * e.g. formatPrice(1999, "EUR", "de-DE") → "19,99 €".
++ */
++export function formatPrice(cents: number, currency: string, locale = "en-US"): string {
++  return new Intl.NumberFormat(locale, { style: "currency", currency }).format(cents / 100);
+ }
+diff --git a/src/orders/summary.ts b/src/orders/summary.ts
+index b9467f2..359e45a 100644
+--- a/src/orders/summary.ts
++++ b/src/orders/summary.ts
+@@ -7,9 +7,10 @@ export interface Order {
+ }
+ 
+ export function orderSummary(order: Order): string[] {
++  const price = (cents: number) => formatPrice(cents, order.currency);
+   const lines = order.lines.map(
+-    (line) => `${line.quantity} × ${line.name}: ${formatPrice(line.quantity * line.unitCents)}`,
++    (line) => `${line.quantity} × ${line.name}: ${price(line.quantity * line.unitCents)}`,
+   );
+   const total = order.lines.reduce((sum, line) => sum + line.quantity * line.unitCents, 0);
+-  return [...lines, `Total: ${formatPrice(total)}`];
++  return [...lines, `Total: ${price(total)}`];
+ }
+diff --git a/src/reports/daily.ts b/src/reports/daily.ts
+index ca2372c..c4276c3 100644
+--- a/src/reports/daily.ts
++++ b/src/reports/daily.ts
+@@ -1,5 +1,5 @@
+-import { format, parseISO } from "date-fns";
++import { format } from "date-fns";
+ 
+ export function dailyReportTitle(isoDate: string): string {
+-  return `Sales for ${format(parseISO(isoDate), "EEEE, MMMM do yyyy")}`;
++  return `Sales for ${format(isoDate, "EEEE, MMMM do yyyy")}`;
+ }

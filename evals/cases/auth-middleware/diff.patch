@@ -1,0 +1,53 @@
+diff --git a/src/middleware/authenticate.test.ts b/src/middleware/authenticate.test.ts
+new file mode 100644
+index 0000000..dd79421
+--- /dev/null
++++ b/src/middleware/authenticate.test.ts
+@@ -0,0 +1,19 @@
++import { describe, expect, it, vi } from "vitest";
++import { authenticate } from "./authenticate.ts";
++import { fakeRequest, fakeResponse, validToken } from "../testing.ts";
++
++describe("authenticate", () => {
++  it("accepts a token in the query string on the events stream", async () => {
++    const next = vi.fn();
++    const req = fakeRequest({ method: "GET", path: "/orders/42/events", query: { access_token: validToken } });
++    await authenticate(req, fakeResponse(), next);
++    expect(next).toHaveBeenCalled();
++  });
++
++  it("ignores a query token on other routes", async () => {
++    const res = fakeResponse();
++    const req = fakeRequest({ method: "GET", path: "/orders/42", query: { access_token: validToken } });
++    await authenticate(req, res, vi.fn());
++    expect(res.statusCode).toBe(401);
++  });
++});
+diff --git a/src/middleware/authenticate.ts b/src/middleware/authenticate.ts
+index 9525282..48353b2 100644
+--- a/src/middleware/authenticate.ts
++++ b/src/middleware/authenticate.ts
+@@ -1,10 +1,22 @@
+ import type { NextFunction, Request, Response } from "express";
+ import { verifySession } from "../sessions.ts";
+ 
++/**
++ * EventSource can't set headers, so the live order stream sends the session token as
++ * ?access_token= instead.
++ */
++const tokenFromQuery = (req: Request): string | undefined => {
++  if (req.method !== "GET" || !req.path.endsWith("/events")) return undefined;
++  const value = req.query.access_token;
++  return typeof value === "string" ? value : undefined;
++};
++
+ /** Resolves the session from the Authorization header and sets req.user, or answers 401. */
+ export async function authenticate(req: Request, res: Response, next: NextFunction): Promise<void> {
+   const header = req.get("authorization");
+-  const token = header?.startsWith("Bearer ") ? header.slice("Bearer ".length) : undefined;
++  const token = header?.startsWith("Bearer ")
++    ? header.slice("Bearer ".length)
++    : tokenFromQuery(req);
+   if (!token) {
+     res.status(401).json({ error: "unauthenticated" });
+     return;
