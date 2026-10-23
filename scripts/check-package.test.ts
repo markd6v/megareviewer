@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { findPackageProblems, MAX_TARBALL_BYTES } from "./check-package.ts";
+import { findPackageProblems, MAX_TARBALL_BYTES, pnpmCommand } from "./check-package.ts";
 
 const GOOD = {
   files: [
@@ -62,5 +62,22 @@ describe("findPackageProblems", () => {
     expect(findPackageProblems({ ...GOOD, tarballBytes: MAX_TARBALL_BYTES + 1 })).toEqual([
       "The tarball is 50.0 MB, over 50.0 MB",
     ]);
+  });
+});
+
+describe("pnpmCommand", () => {
+  const args = ["pack", "--pack-destination", "C:\\Users\\Jo Smith\\Temp\\pack"];
+
+  it("runs pnpm directly where it's an executable", () => {
+    expect(pnpmCommand(args, "linux")).toEqual({ file: "pnpm", args, shell: false });
+    expect(pnpmCommand(args, "darwin").shell).toBe(false);
+  });
+
+  it("goes through the shell on Windows, where pnpm is a .cmd shim, quoting paths with spaces", () => {
+    expect(pnpmCommand(args, "win32")).toEqual({
+      file: "pnpm",
+      args: ["pack", "--pack-destination", '"C:\\Users\\Jo Smith\\Temp\\pack"'],
+      shell: true,
+    });
   });
 });

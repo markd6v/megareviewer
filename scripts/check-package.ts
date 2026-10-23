@@ -56,6 +56,18 @@ export const findPackageProblems = (pack: {
   return problems;
 };
 
+/**
+ * pnpm is a .cmd shim on Windows, which Node starts only through a shell; the shell then needs
+ * paths with spaces quoted.
+ */
+export const pnpmCommand = (
+  args: readonly string[],
+  platform: NodeJS.Platform = process.platform,
+): { file: string; args: string[]; shell: boolean } =>
+  platform === "win32"
+    ? { file: "pnpm", args: args.map((arg) => (/\s/.test(arg) ? `"${arg}"` : arg)), shell: true }
+    : { file: "pnpm", args: [...args], shell: false };
+
 export const megabytes = (bytes: number): string => `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 
 const listFiles = async (root: string): Promise<string[]> =>
@@ -67,11 +79,13 @@ const listFiles = async (root: string): Promise<string[]> =>
 const main = async () => {
   const work = await mkdtemp(join(tmpdir(), "megareviewer-pack-"));
   try {
-    execFileSync("pnpm", ["pack", "--pack-destination", work], { stdio: "ignore" });
+    const pnpm = pnpmCommand(["pack", "--pack-destination", work]);
+    execFileSync(pnpm.file, pnpm.args, { stdio: "ignore", shell: pnpm.shell });
     const tarball = (await readdir(work)).find((file) => file.endsWith(".tgz"));
     if (tarball === undefined) throw new Error("pnpm pack made no tarball");
     const tarballPath = join(work, tarball);
-    execFileSync("tar", ["-xzf", tarballPath, "-C", work]);
+    // Relative, because Git Bash's GNU tar reads "C:\…" as a remote host.
+    execFileSync("tar", ["-xzf", tarball], { cwd: work });
     const root = join(work, "package");
 
     const packageJson: unknown = JSON.parse(await readFile(join(root, "package.json"), "utf8"));
