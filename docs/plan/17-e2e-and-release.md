@@ -102,7 +102,7 @@ Then:
 
 ## Definition of done
 
-- [ ] Every end-to-end test passes in CI; cross-platform smoke test is green.
+- [x] Every end-to-end test passes in CI; cross-platform smoke test is green.
 - [ ] Security review checklist complete.
 - [ ] Dogfood log has at least 10 PRs; cost estimate in ARCHITECTURE.md updated.
 - [x] README written.
@@ -110,7 +110,6 @@ Then:
 
 ## Open issues
 
-- **CI not confirmed yet** for the new end-to-end step and the smoke matrix: they passed locally on macOS (end-to-end with the installed Chrome through `PLAYWRIGHT_CHANNEL=chrome`), but Linux and Windows run them first in CI.
 - **Dogfooding not done.** It needs Anthropic credentials, which this machine doesn't have, and real PRs on both hosts. `e2e/dogfood-log.md` and ARCHITECTURE.md's measured cost range wait for it, as does the network check for Anthropic, Bitbucket and Jira above.
 - **0.1.0 not published.** Before pushing the `v0.1.0` tag, the user sets up npm: a trusted publisher for `markd6v/megareviewer`, workflow `release.yml`, environment `npm` (or an `NPM_TOKEN` secret in that environment, which GitHub creates on the first release run). Then smoke-test with `npx megareviewer@0.1.0 --version` on a clean machine.
 - **Carried from other stages,** none blocking a release: unverified fixtures that need real accounts (stages 05, 06, 07: publishing on both hosts, Jira's 401), the live Claude check and the eval run (stages 08 and 16), `standardwebhooks`' license (stage 12), and stage 03's three proof edge cases (moves within one file, indentation inside multi-line strings, nested `.gitattributes`). Each is described in its stage's **Open issues**. Dogfooding should exercise the first two.
@@ -122,5 +121,6 @@ Where the code differs from or adds to this doc.
 - **End-to-end tests** (`e2e/review.spec.ts`, `pnpm e2e` after `pnpm build`) start a fake-mode server per test on a free port (`e2e/fake-server.ts`), instead of one on port 4999, so tests run in parallel without sharing the in-memory store. The config lives in `e2e/playwright.config.ts`. `PLAYWRIGHT_CHANNEL=chrome` runs them with the installed Chrome when Playwright's own browser isn't downloaded.
 - **Test details.** "Analyze from URL" can't watch stages advance, because the fake model answers at once; the failed-analysis test checks the progress strip instead (collect done, intent failed). The partial-failure test fails post 3, the second inline comment, since post 1 is the summary. The stale test starts the analysis through the API and moves the PR's head while it runs, because the view caches staleness for 60 seconds once an analysis is complete.
 - **CI.** The `check` job also installs Chromium and runs the end-to-end tests, uploading the report when they fail. A `smoke` job builds and checks the package on Ubuntu, macOS and Windows, runs `--version`, and requires `doctor` without credentials to exit 1 naming the missing git host and Anthropic credentials. `ci.yml` is callable, so `release.yml` runs it before publishing with `npm publish --provenance` after checking the tag against `package.json`.
+- **Windows.** `scripts/check-package.ts` (stage 12's) starts `pnpm` through the shell on Windows, where it's a `.cmd` shim, and unpacks the tarball by a relative path, because Git Bash's GNU tar reads `C:\…` as a host. The smoke job is green on all three systems since 37cfbe1.
 - **Stage 15's chunk warning:** `web/vite.config.ts` (stage 13's) raises `chunkSizeWarningLimit` to 1,000 KB for the lazily loaded C++ grammar.
 - **README.** GitHub's token permissions weren't in stage 05's notes; the README lists what the adapter calls need: fine-grained Pull requests read and write, Contents read, Metadata read, or classic `repo`.
