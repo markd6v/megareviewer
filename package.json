@@ -1,7 +1,24 @@
 {
   "name": "megareviewer",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
+  "description": "Guided code review for GitHub and Bitbucket Cloud pull requests: intent first, changes sorted by risk, decisions to approve.",
+  "keywords": [
+    "code-review",
+    "pull-request",
+    "github",
+    "bitbucket",
+    "claude",
+    "cli"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/markd6v/megareviewer.git"
+  },
+  "homepage": "https://github.com/markd6v/megareviewer#readme",
+  "bugs": {
+    "url": "https://github.com/markd6v/megareviewer/issues"
+  },
   "type": "module",
   "bin": {
     "megareviewer": "dist/cli.js"

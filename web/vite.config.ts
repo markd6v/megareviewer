@@ -12,6 +12,9 @@ export default defineConfig(({ mode }) => ({
     outDir: fileURLToPath(new URL("../dist/web", import.meta.url)),
     emptyOutDir: true,
     assetsDir: "assets",
+    // Grammars load lazily, one chunk per language, and the C++ one is about 800 KB. They're
+    // read from the local server, so their size never slows a first load.
+    chunkSizeWarningLimit: 1000,
   },
   server:
     mode === "mock"

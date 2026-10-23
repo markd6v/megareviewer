@@ -1,6 +1,6 @@
 # Stage 12: CLI, composition root and packaging
 
-**Status:** In progress (on main; CI green on 03810d5; `dist/web/` waits for stage 13)
+**Status:** Done (pushed to main without a PR; CI green on 03810d5; `dist/web/` and its notices checked in stage 17)
 **Depends on:** 04, 05, 06, 07, 08, 09, 11
 **Unblocks:** 17
 **Owns:** `src/cli/`, `scripts/build.ts`, `scripts/check-package.ts`, `package.json` (`bin`, `files`, `build` script)
@@ -142,7 +142,6 @@ Run in CI after `pnpm build`:
 
 ## Open issues
 
-- **No UI in the package yet.** `scripts/build.ts` runs `vite build` only once `web/index.html` and `web/vite.config.ts` exist (stage 13), with `outDir` forced to `dist/web/`. The UI's bundled packages then get notices from Rollup's `moduleIds`, which is untested until then.
 - **`standardwebhooks`** (pulled in by `@anthropic-ai/sdk`) ships no license file. Its `package.json` says MIT, its repo's `LICENSE` is Apache-2.0. `build.ts` lists it as a reviewed exception with what its `package.json` says; any other package without a license file fails the build.
 - **Anthropic not checked live:** no credentials on the machine used, so `doctor`'s `models.retrieve` call and an analysis through the bundle are unverified.
 

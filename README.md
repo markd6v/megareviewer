@@ -1,20 +1,64 @@
 # megareviewer
 
-A local tool that turns a GitHub or Bitbucket Cloud pull request into a guided review: intent first, changes sorted by risk, decisions to approve. Early development, not usable yet.
+Turns a GitHub or Bitbucket Cloud pull request into a guided review. You see what the PR was asked to do next to what the code actually does. Changes are sorted by risk, with mechanical ones collapsed and proved. Changes are ordered as a tour, and the decisions the code makes are listed for you to approve or reject. Your verdicts are posted back to the PR as one review.
 
-## Develop
+## Run
 
-Requires Node 24+ and pnpm.
+Needs Node 24 or later.
 
-```sh
-pnpm install
-pnpm check
+```bash
+npx megareviewer
 ```
 
-## Docs
+It starts a server on `127.0.0.1` and opens the review UI in your browser. `--port <n>` picks the port, `--no-open` skips the browser.
+
+```bash
+npx megareviewer doctor
+```
+
+`doctor` checks every credential below and exits 1 if something required is missing.
+
+## Credentials
+
+Set them as environment variables. You need at least one git host and Anthropic.
+
+**GitHub.** The first one found is used:
+
+| Source | Notes |
+|---|---|
+| `GITHUB_TOKEN` | Fine-grained token with Pull requests: read and write, Contents: read and Metadata: read. A classic token needs `repo` (or `public_repo` for public repositories only) |
+| `GH_TOKEN` | Same as `GITHUB_TOKEN` |
+| `gh auth token` | Used when you're signed in with the GitHub CLI |
+
+**Bitbucket Cloud**
+
+| Variable | Notes |
+|---|---|
+| `BITBUCKET_EMAIL` | Your Atlassian account email |
+| `BITBUCKET_API_TOKEN` | A scoped Atlassian API token with `read:user:bitbucket`, `read:repository:bitbucket`, `read:pullrequest:bitbucket` and `write:pullrequest:bitbucket`. App passwords aren't supported |
+| `BITBUCKET_WORKSPACE` | Optional. The workspace whose PRs the picker lists. It scans the 50 most recently updated repositories; a pasted PR URL always works |
+
+**Anthropic.** `ANTHROPIC_API_KEY`, or a profile from `ant auth login`. Analyses use Claude Opus 5.5 and are billed to your account.
+
+**Jira.** Optional: without it, ticket keys are shown but not fetched.
+
+| Variable | Notes |
+|---|---|
+| `JIRA_BASE_URL` | e.g. `https://your-site.atlassian.net` |
+| `JIRA_EMAIL` | Your Atlassian account email |
+| `JIRA_API_TOKEN` | An Atlassian API token without scopes (scoped tokens don't work with the site URL) |
+
+## Privacy
+
+Your code goes only to Anthropic's API, for the analysis. Nothing is sent to us, and there is no telemetry. Credentials stay in the local server process and never reach the browser. Analyses and verdicts are stored in `~/.megareviewer` (`MEGAREVIEWER_HOME` to move it).
+
+## Contributing
+
+With pnpm installed, `pnpm install`, then `pnpm check` (types, lint, dependency rules, tests), `pnpm build` and `pnpm e2e` (end-to-end tests against the build) are what CI runs.
 
 - [MISSION.md](MISSION.md): why this exists
 - [DESIGN.md](DESIGN.md): how review should work
 - [ARCHITECTURE.md](ARCHITECTURE.md): how it's built
 - [ENGINEERING.md](ENGINEERING.md): how we write code
-- [docs/plan](docs/plan/README.md): implementation plan
+- [docs/plan](docs/plan/README.md): the implementation plan
+- [evals](evals/README.md): measuring the model passes

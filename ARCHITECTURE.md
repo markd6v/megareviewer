@@ -90,6 +90,10 @@ Alternatives considered:
 - **Rust:** no official Claude SDK, and slower iteration that doesn't pay off for mostly-network work.
 - **Python:** the hardest to install on users' machines.
 
+## Releases
+
+Versions are published to npm from CI: pushing a `v*` tag runs every check, builds the package, and publishes it with npm provenance. Users can verify that a version was built from this repository at a given commit, which matters for a tool that holds their credentials. Publishing from a laptop was the alternative; it's simpler, but nothing ties the published files to the source. megareviewer is MIT-licensed.
+
 ## Credentials
 
 | Service | Source | Required |
