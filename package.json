@@ -24,7 +24,8 @@
     "dev:web": "vite --config web/vite.config.ts",
     "dev:web:mock": "vite --config web/vite.config.ts --mode mock",
     "dev:fake": "node src/cli/dev/fake-main.ts",
-    "build": "node scripts/build.ts"
+    "build": "node scripts/build.ts",
+    "e2e": "playwright test -c e2e"
   },
   "devDependencies": {
     "@anthropic-ai/sdk": "0.137.0",
