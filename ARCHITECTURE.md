@@ -68,7 +68,7 @@ flowchart LR
 | Code analysis | Parse changed files for mechanical proofs and call-graph hints | `web-tree-sitter` |
 | Store | Cached analyses and review state | SQLite via built-in `node:sqlite`, plain SQL migrations |
 
-It ships as one npm package. The server is bundled into a single file with no runtime dependencies, and the UI is prebuilt and served as static files.
+It ships as one npm package. The server is bundled into a single file with no runtime dependencies, and the UI is prebuilt and served as static files. A tiny launcher runs first and checks the Node version, so Node older than 24 gets a clear message instead of a failed import of `node:sqlite`.
 
 ## Why TypeScript everywhere
 

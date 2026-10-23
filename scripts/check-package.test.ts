@@ -7,6 +7,7 @@ const GOOD = {
     "README.md",
     "dist/cli.js",
     "dist/grammars/web-tree-sitter.wasm",
+    "dist/server.js",
     "package.json",
   ],
   packageJson: {
@@ -31,9 +32,10 @@ describe("findPackageProblems", () => {
     ]);
   });
 
-  it("requires dist/cli.js", () => {
+  it("requires the launcher and the server bundle", () => {
     expect(findPackageProblems({ ...GOOD, files: ["package.json"] })).toEqual([
       "The package has no dist/cli.js",
+      "The package has no dist/server.js",
     ]);
   });
 

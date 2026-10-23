@@ -33,7 +33,9 @@ export const findPackageProblems = (pack: {
   const problems = pack.files
     .filter((file) => !ALLOWED_FILE.test(file))
     .map((file) => `Unexpected file in the package: ${file}`);
-  if (!pack.files.includes("dist/cli.js")) problems.push("The package has no dist/cli.js");
+  for (const entry of ["dist/cli.js", "dist/server.js"]) {
+    if (!pack.files.includes(entry)) problems.push(`The package has no ${entry}`);
+  }
 
   const packageJson = PackedPackageJson.parse(pack.packageJson);
   for (const field of DEPENDENCY_FIELDS) {

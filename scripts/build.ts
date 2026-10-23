@@ -13,8 +13,7 @@ const GRAMMARS = "src/adapters/treesitter/grammars";
 const GRAMMAR_EXTRAS = new Set(["PROVENANCE.md", "refresh.sh", "licenses"]);
 
 // The bundle is ESM, but CommonJS dependencies inside it call require().
-const BANNER = `#!/usr/bin/env node
-import { createRequire as __megareviewerCreateRequire } from "node:module";
+const SERVER_BANNER = `import { createRequire as __megareviewerCreateRequire } from "node:module";
 const require = __megareviewerCreateRequire(import.meta.url);`;
 
 /** The package directory a bundled file comes from, or null for our own sources. */
@@ -166,22 +165,38 @@ const buildWeb = async (): Promise<string[]> => {
   return outputs.flatMap((chunk) => (chunk.type === "chunk" ? chunk.moduleIds : []));
 };
 
+/**
+ * dist/cli.js is a small launcher that checks the Node version, built for old Node so it can
+ * say why it won't run. It then loads dist/server.js, the bundle of everything else.
+ */
 const buildServer = async (): Promise<string[]> => {
-  const result = await build({
-    entryPoints: ["src/cli/main.ts"],
-    outfile: join(DIST, "cli.js"),
+  const shared = {
     bundle: true,
     platform: "node",
-    target: "node24",
     format: "esm",
     // Not minified: users can read what they run.
     minify: false,
-    banner: { js: BANNER },
     metafile: true,
     logLevel: "warning",
-  });
+  } as const;
+  const [launcher, server] = await Promise.all([
+    build({
+      ...shared,
+      entryPoints: ["src/cli/bin.ts"],
+      outfile: join(DIST, "cli.js"),
+      target: "node18",
+      banner: { js: "#!/usr/bin/env node" },
+    }),
+    build({
+      ...shared,
+      entryPoints: ["src/cli/main.ts"],
+      outfile: join(DIST, "server.js"),
+      target: "node24",
+      banner: { js: SERVER_BANNER },
+    }),
+  ]);
   await chmod(join(DIST, "cli.js"), 0o755);
-  return Object.keys(result.metafile.inputs);
+  return [...Object.keys(launcher.metafile.inputs), ...Object.keys(server.metafile.inputs)];
 };
 
 const main = async () => {

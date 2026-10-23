@@ -15,7 +15,7 @@ import { serve } from "./serve.ts";
 const { version } = packageJson;
 
 /**
- * Bundled, dist/cli.js has grammars/ and web/ next to it. From source, the grammars are the
+ * Bundled, dist/server.js has grammars/ and web/ next to it. From source, the grammars are the
  * tree-sitter adapter's and there is no built UI: Vite serves it.
  */
 const locateAssets = (): { grammarsDir: string; staticDir: string | null } => {
