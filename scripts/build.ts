@@ -191,7 +191,7 @@ const buildServer = async (): Promise<string[]> => {
       ...shared,
       entryPoints: ["src/cli/main.ts"],
       outfile: join(DIST, "server.js"),
-      target: "node24",
+      target: "node22",
       banner: { js: SERVER_BANNER },
     }),
   ]);

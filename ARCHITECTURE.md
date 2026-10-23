@@ -61,14 +61,14 @@ flowchart LR
 
 | Component | Role | Tech |
 |---|---|---|
-| CLI | Checks credentials, starts the server, opens the browser | Node 24+, TypeScript |
+| CLI | Checks credentials, starts the server, opens the browser | Node 22.13+, TypeScript |
 | Local server | Serves the UI and the API, runs the analysis pipeline, holds all credentials | Hono |
 | Web UI | PR picker, review page, publishing | Vite, React, Shiki |
 | Connectors | Git hosts, tickets, model calls | Octokit, Bitbucket REST, Jira REST, `@anthropic-ai/sdk` |
 | Code analysis | Parse changed files for mechanical proofs and call-graph hints | `web-tree-sitter` |
 | Store | Cached analyses and review state | SQLite via built-in `node:sqlite`, plain SQL migrations |
 
-It ships as one npm package. The server is bundled into a single file with no runtime dependencies, and the UI is prebuilt and served as static files. A tiny launcher runs first and checks the Node version, so Node older than 24 gets a clear message instead of a failed import of `node:sqlite`.
+It ships as one npm package. The server is bundled into a single file with no runtime dependencies, and the UI is prebuilt and served as static files. A tiny launcher runs first and checks the Node version, so Node older than 22.13, the first with `node:sqlite` unflagged, gets a clear message instead of a failed import of `node:sqlite`.
 
 ## Why TypeScript everywhere
 

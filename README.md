@@ -4,7 +4,7 @@ Turns a GitHub or Bitbucket Cloud pull request into a guided review. You see wha
 
 ## Run
 
-Needs Node 24 or later.
+Needs Node 22.13 or later.
 
 ```bash
 npx megareviewer

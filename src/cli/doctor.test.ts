@@ -3,6 +3,7 @@ import { allFixtures, FakeGitHost, FakeTicketSource } from "../application/testi
 import { err, ok } from "../domain/shared/index.ts";
 import type { Config } from "./config.ts";
 import { type DoctorDeps, formatCheck, runDoctor } from "./doctor.ts";
+import { NODE_FIX } from "./node-version.ts";
 
 const CONFIG: Config = {
   github: { token: "ghp_x", source: "gh auth token" },
@@ -54,7 +55,7 @@ describe("runDoctor", () => {
       ["fail", "A"],
       ["fail", "B"],
     ]);
-    expect(checks[0]?.fix).toBe("Install Node 24 or later.");
+    expect(checks[0]?.fix).toBe(NODE_FIX);
   });
 
   it("skips services that aren't configured", async () => {

@@ -13,6 +13,7 @@ import {
   systemClock,
 } from "./compose.ts";
 import type { Config, GitHubTokenSource } from "./config.ts";
+import { NODE_FIX, nodeSupported } from "./node-version.ts";
 
 export interface Check {
   /** "skip": an optional service that isn't configured. */
@@ -37,7 +38,6 @@ export interface DoctorDeps {
   openStore(): Result<void, string>;
 }
 
-const MIN_NODE_MAJOR = 24;
 /** The model the Claude adapter uses. */
 const MODEL = "claude-opus-5-5";
 /** A key no Jira site has, so a working login answers "missing". */
@@ -137,11 +137,9 @@ const checkAnthropic = async (deps: DoctorDeps): Promise<Check> => {
 
 /** One check per line of `doctor`, in a fixed order. Network checks run in parallel. */
 export const runDoctor = async (deps: DoctorDeps): Promise<Check[]> => {
-  const major = Number(deps.nodeVersion.split(".")[0]);
-  const node =
-    major >= MIN_NODE_MAJOR
-      ? check("pass", "Node", deps.nodeVersion)
-      : check("fail", "Node", deps.nodeVersion, `Install Node ${MIN_NODE_MAJOR} or later.`);
+  const node = nodeSupported(deps.nodeVersion)
+    ? check("pass", "Node", deps.nodeVersion)
+    : check("fail", "Node", deps.nodeVersion, NODE_FIX);
   const problems = deps.problems.map((problem) => check("fail", "Configuration", problem));
   const services = await Promise.all([
     checkGitHub(deps),

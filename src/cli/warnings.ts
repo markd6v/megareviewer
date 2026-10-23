@@ -1,5 +1,5 @@
-// Imported first by main.ts, so the listener is in place before node:sqlite loads. Some Node 24
-// releases still call SQLite experimental: users can't act on that, so only it is dropped.
+// Imported first by main.ts, so the listener is in place before node:sqlite loads. Node 22 and
+// some Node 24 releases still call SQLite experimental: users can't act on that, so only it is dropped.
 process.removeAllListeners("warning");
 process.on("warning", (warning) => {
   if (warning.name === "ExperimentalWarning" && warning.message.includes("SQLite")) return;

@@ -59,6 +59,8 @@ export const openSqliteAnalysisStore = (
   if (options.path !== ":memory:") createPrivateFile(options.path);
 
   const db = new DatabaseSync(options.path);
+  // Not db.isOpen: it needs Node 22.15, and we run on 22.13.
+  let open = true;
   db.exec("PRAGMA journal_mode = WAL");
   db.exec("PRAGMA busy_timeout = 5000");
   db.exec("PRAGMA foreign_keys = ON");
@@ -230,7 +232,9 @@ export const openSqliteAnalysisStore = (
     },
 
     close() {
-      if (db.isOpen) db.close();
+      if (!open) return;
+      db.close();
+      open = false;
     },
   };
 };

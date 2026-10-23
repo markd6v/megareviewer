@@ -48,6 +48,30 @@ jobs:
           path: e2e/playwright-report/
           retention-days: 7
 
+  # The oldest Node package.json's engines allow, so nothing newer slips into the server. Building
+  # needs the repo's Node; the server tests and the package then run on the oldest one.
+  oldest-node:
+    runs-on: ubuntu-latest
+    env:
+      COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22.13.0
+
+      - run: node node_modules/vitest/vitest.mjs run --project server
+      - run: node dist/cli.js --version
+
   # The built package on every OS users run it on: it builds, starts, and fails readably
   # without credentials.
   smoke:
