@@ -39,7 +39,7 @@ const printSummary = (config: Config, composition: Composition, url: string, ui:
   const bitbucket =
     config.bitbucket === null
       ? "not configured"
-      : `as ${config.bitbucket.email}${config.bitbucket.workspace === null ? "" : `, workspace ${config.bitbucket.workspace}`}`;
+      : `as ${config.bitbucket.username} (${config.bitbucket.credential})${config.bitbucket.workspace === null ? "" : `, workspace ${config.bitbucket.workspace}`}`;
   const jira =
     config.jira === null ? "not configured: ticket keys aren't fetched" : config.jira.baseUrl;
   const model = composition.modelConfigured

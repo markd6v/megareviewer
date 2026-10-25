@@ -123,8 +123,8 @@ const main = async (): Promise<void> => {
     process.stderr.write(`${message}\n`);
   };
   const host = createBitbucketHost({
-    email,
-    apiToken,
+    username: email,
+    password: apiToken,
     workspace: null,
     clock: { now: () => new Date().toISOString() },
     logger: { debug: () => {}, info: log, warn: log, error: log },

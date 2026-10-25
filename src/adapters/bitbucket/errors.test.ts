@@ -68,7 +68,7 @@ describe("fromErrorResponse", () => {
       {
         kind: "not-found",
         message:
-          "Not found on Bitbucket. If the repository is private, the API token may lack access to it.",
+          "Not found on Bitbucket. If the repository is private, the credentials may lack access to it.",
       },
     ],
     ["555 (diff timed out)", response(555), "read", { kind: "too-large" }],

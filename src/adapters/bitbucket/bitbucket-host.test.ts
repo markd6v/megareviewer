@@ -37,8 +37,8 @@ const hostWith = (
   { logger = new RecordingLogger(), workspace = "acme" as string | null } = {},
 ) =>
   createBitbucketHost({
-    email: "reviewer@example.com",
-    apiToken: "test-token",
+    username: "reviewer@example.com",
+    password: "test-token",
     workspace,
     clock: new FixedClock(),
     logger,
@@ -157,8 +157,8 @@ describe("createBitbucketHost", () => {
     it("sends Basic auth with the email and API token", async () => {
       const { fetch, requests } = recordingFetch(readExchanges);
       await createBitbucketHost({
-        email: "reviewer@example.com",
-        apiToken: "test-token",
+        username: "reviewer@example.com",
+        password: "test-token",
         workspace: null,
         clock: new FixedClock(),
         logger: new RecordingLogger(),
@@ -280,8 +280,8 @@ describe("createBitbucketHost", () => {
 
     it("fails with network when fetch can't connect", async () => {
       const host = createBitbucketHost({
-        email: "e",
-        apiToken: "t",
+        username: "e",
+        password: "t",
         workspace: null,
         clock: new FixedClock(),
         logger: new RecordingLogger(),
@@ -315,8 +315,8 @@ describe("createBitbucketHost", () => {
         exchange("GET", moved, 200, "content", { headers: { "content-type": "text/plain" } }),
       ]);
       const host = createBitbucketHost({
-        email: "e",
-        apiToken: "t",
+        username: "e",
+        password: "t",
         workspace: null,
         clock: new FixedClock(),
         logger: new RecordingLogger(),
@@ -334,8 +334,8 @@ describe("createBitbucketHost", () => {
         exchange("GET", media, 200, "lfs content", { headers: { "content-type": "text/plain" } }),
       ]);
       const host = createBitbucketHost({
-        email: "e",
-        apiToken: "t",
+        username: "e",
+        password: "t",
         workspace: null,
         clock: new FixedClock(),
         logger: new RecordingLogger(),
@@ -386,8 +386,8 @@ describe("createBitbucketHost", () => {
     it("asks Bitbucket once per adapter", async () => {
       const { fetch, requests } = recordingFetch(listExchanges);
       const host = createBitbucketHost({
-        email: "e",
-        apiToken: "t",
+        username: "e",
+        password: "t",
         workspace: null,
         clock: new FixedClock(),
         logger: new RecordingLogger(),
@@ -405,8 +405,8 @@ describe("createBitbucketHost", () => {
     it("asks again after a failure", async () => {
       const { fetch, requests } = recordingFetch(unauthorizedExchanges);
       const host = createBitbucketHost({
-        email: "e",
-        apiToken: "t",
+        username: "e",
+        password: "t",
         workspace: null,
         clock: new FixedClock(),
         logger: new RecordingLogger(),
@@ -510,8 +510,8 @@ describe("createBitbucketHost", () => {
       const { fetch, requests } = recordingFetch([...readExchanges, ...publishExchanges]);
       const bodies: unknown[] = [];
       const host = createBitbucketHost({
-        email: "e",
-        apiToken: "t",
+        username: "e",
+        password: "t",
         workspace: null,
         clock: new FixedClock(),
         logger: new RecordingLogger(),
@@ -563,8 +563,8 @@ describe("createBitbucketHost", () => {
       const retry = options(first.posted.map(([postedKey]) => postedKey));
       const { fetch, requests } = recordingFetch(okExchanges);
       const host = createBitbucketHost({
-        email: "e",
-        apiToken: "t",
+        username: "e",
+        password: "t",
         workspace: null,
         clock: new FixedClock(),
         logger: new RecordingLogger(),
@@ -617,8 +617,8 @@ describe("createBitbucketHost", () => {
       const { fetch, requests } = recordingFetch(okExchanges);
       const retry = options(first.posted.map(([postedKey]) => postedKey));
       const result = await createBitbucketHost({
-        email: "e",
-        apiToken: "t",
+        username: "e",
+        password: "t",
         workspace: null,
         clock: new FixedClock(),
         logger: new RecordingLogger(),
@@ -636,8 +636,8 @@ describe("createBitbucketHost", () => {
 
       const { fetch, requests } = recordingFetch([...readExchanges, approve, summary("ok", 1)]);
       const host = createBitbucketHost({
-        email: "e",
-        apiToken: "t",
+        username: "e",
+        password: "t",
         workspace: null,
         clock: new FixedClock(),
         logger: new RecordingLogger(),

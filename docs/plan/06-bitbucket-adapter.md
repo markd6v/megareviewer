@@ -100,7 +100,7 @@ Same kinds as GitHub (stage 05 table), with Bitbucket's statuses: 401 `unauthori
 
 Where the code differs from or adds to this doc. Endpoints were checked against Bitbucket's OpenAPI spec (`https://api.bitbucket.org/swagger.json`) and live calls on public repos.
 
-- **Options** are `{ email, apiToken, workspace, clock, logger, fetch? }`. Stage 12 passes a `Clock`, used for receipts (Bitbucket gives no publish time).
+- **Options** are `{ username, password, workspace, clock, logger, fetch? }`: Basic auth with an email and API token, or a username and app password. Stage 12 passes a `Clock`, used for receipts (Bitbucket gives no publish time).
 - **The diff comes from `GET /repositories/{ws}/{repo}/diff/{head}..{dest}?topic=true`** at the PR object's commits, not from `…/pullrequests/{id}/diff`. That endpoint only redirects to the same diff (`/diff/{ws}/{repo}:{head}%0D{dest}?topic=true`) for the PR's current commits, so a push between the two calls would mismatch the diff and `headSha`. Byte-identical on #26. Fork PRs work: fork commits resolve in the destination repo (checked on atlassian/atlassian-connect-express#509), and so do `getFile` calls at a fork's head.
 - **Redirects** are followed by the adapter (`redirect: "manual"`, at most 5 hops), sending credentials only to `api.bitbucket.org`. The PR diff no longer needs it; LFS files do (`src` redirects them to Atlassian's media service).
 - **A PR whose source branch or fork was deleted** has `source.commit: null`. `getPullRequest` returns `not-found` saying so.

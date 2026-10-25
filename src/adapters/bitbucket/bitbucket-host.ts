@@ -30,9 +30,9 @@ import {
 } from "./schemas.ts";
 
 export interface BitbucketHostOptions {
-  readonly email: string;
-  /** A scoped Atlassian API token. */
-  readonly apiToken: string;
+  /** Basic auth: an Atlassian email and API token, or a Bitbucket username and app password. */
+  readonly username: string;
+  readonly password: string;
   /** Where listPullRequests looks. null means it lists nothing. */
   readonly workspace: string | null;
   readonly clock: Clock;
@@ -80,8 +80,8 @@ const mapLimit = async <T, R>(
 export const createBitbucketHost = (options: BitbucketHostOptions): GitHost => {
   const { clock, logger, workspace } = options;
   const client: BitbucketClient = createBitbucketClient({
-    email: options.email,
-    apiToken: options.apiToken,
+    username: options.username,
+    password: options.password,
     logger,
     fetch: options.fetch ?? globalThis.fetch,
   });

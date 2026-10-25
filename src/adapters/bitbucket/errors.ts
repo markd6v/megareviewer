@@ -71,7 +71,7 @@ export const fromErrorResponse = (response: BitbucketErrorResponse, call: CallKi
   if (status === 401) {
     return hostError(
       "unauthorized",
-      "Bitbucket rejected the credentials. Check BITBUCKET_EMAIL and BITBUCKET_API_TOKEN.",
+      "Bitbucket rejected the credentials. Check BITBUCKET_EMAIL and BITBUCKET_API_TOKEN, or BITBUCKET_USERNAME and BITBUCKET_APP_PASSWORD.",
     );
   }
   if (status === 429) {
@@ -87,7 +87,7 @@ export const fromErrorResponse = (response: BitbucketErrorResponse, call: CallKi
   if (status === 404) {
     return hostError(
       "not-found",
-      "Not found on Bitbucket. If the repository is private, the API token may lack access to it.",
+      "Not found on Bitbucket. If the repository is private, the credentials may lack access to it.",
     );
   }
   if (status === DIFF_TIMED_OUT) {

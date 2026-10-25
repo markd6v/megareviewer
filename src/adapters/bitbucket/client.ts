@@ -14,8 +14,8 @@ const MAX_REDIRECTS = 5;
 export const MAX_PAGES = 10;
 
 export interface ClientOptions {
-  readonly email: string;
-  readonly apiToken: string;
+  readonly username: string;
+  readonly password: string;
   readonly logger: Logger;
   readonly fetch: typeof fetch;
 }
@@ -42,7 +42,7 @@ export interface BitbucketClient {
 
 export const createBitbucketClient = (options: ClientOptions): BitbucketClient => {
   const { logger } = options;
-  const authorization = `Basic ${Buffer.from(`${options.email}:${options.apiToken}`).toString("base64")}`;
+  const authorization = `Basic ${Buffer.from(`${options.username}:${options.password}`).toString("base64")}`;
 
   /**
    * Follows redirects itself so the credentials only ever go to Bitbucket's API: a redirect

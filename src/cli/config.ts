@@ -13,9 +13,13 @@ export interface GitHubConfig {
   readonly source: GitHubTokenSource;
 }
 
+export type BitbucketCredential = "api token" | "app password";
+
 export interface BitbucketConfig {
-  readonly email: string;
-  readonly apiToken: string;
+  readonly credential: BitbucketCredential;
+  /** The Atlassian email for an API token, the Bitbucket username for an app password. */
+  readonly username: string;
+  readonly password: string;
   /** Where the picker looks for PRs. null: the picker lists none, pasted URLs still work. */
   readonly workspace: string | null;
 }
@@ -94,28 +98,16 @@ export const loadConfig = async (
 
   const github = await readGitHub(read, run);
 
-  const bitbucketValues = readAll("Bitbucket", ["BITBUCKET_EMAIL", "BITBUCKET_API_TOKEN"]);
+  const bitbucket = readBitbucket(read, readAll);
   const workspace = read("BITBUCKET_WORKSPACE");
-  const noBitbucketCredentials =
-    read("BITBUCKET_EMAIL") === null && read("BITBUCKET_API_TOKEN") === null;
+  const noBitbucketCredentials = [...API_TOKEN_NAMES, ...APP_PASSWORD_NAMES].every(
+    (name) => read(name) === null,
+  );
   if (workspace !== null && noBitbucketCredentials) {
-    // Likely set up for another tool with app passwords, which Atlassian replaced by API tokens.
-    const appPassword =
-      read("BITBUCKET_APP_PASSWORD") === null
-        ? ""
-        : " App passwords (BITBUCKET_APP_PASSWORD) aren't supported: create a scoped API token.";
     problems.push(
-      `BITBUCKET_WORKSPACE is set without credentials: also set BITBUCKET_EMAIL and BITBUCKET_API_TOKEN.${appPassword}`,
+      "BITBUCKET_WORKSPACE is set without credentials: also set BITBUCKET_EMAIL and BITBUCKET_API_TOKEN.",
     );
   }
-  const bitbucket: BitbucketConfig | null =
-    bitbucketValues === null
-      ? null
-      : {
-          email: bitbucketValues.BITBUCKET_EMAIL,
-          apiToken: bitbucketValues.BITBUCKET_API_TOKEN,
-          workspace,
-        };
   // A partial Bitbucket config already has its own problem.
   if (github === null && noBitbucketCredentials && workspace === null) problems.push(NO_GIT_HOST);
 
@@ -145,9 +137,49 @@ export const loadConfig = async (
   }
 
   return {
-    config: { github, bitbucket, jira, home, logLevel: logLevel ?? "info" },
+    config: {
+      github,
+      bitbucket: bitbucket === null ? null : { ...bitbucket, workspace },
+      jira,
+      home,
+      logLevel: logLevel ?? "info",
+    },
     problems,
   };
+};
+
+const API_TOKEN_NAMES = ["BITBUCKET_EMAIL", "BITBUCKET_API_TOKEN"] as const;
+const APP_PASSWORD_NAMES = ["BITBUCKET_USERNAME", "BITBUCKET_APP_PASSWORD"] as const;
+
+/**
+ * An API token wins over an app password, so a stray BITBUCKET_USERNAME left for another tool
+ * isn't reported as a partial app password.
+ */
+const readBitbucket = (
+  read: (name: string) => string | null,
+  readAll: <const N extends string>(
+    service: string,
+    names: readonly N[],
+  ) => Record<N, string> | null,
+): Omit<BitbucketConfig, "workspace"> | null => {
+  if (API_TOKEN_NAMES.some((name) => read(name) !== null)) {
+    const values = readAll("Bitbucket", API_TOKEN_NAMES);
+    return values === null
+      ? null
+      : {
+          credential: "api token",
+          username: values.BITBUCKET_EMAIL,
+          password: values.BITBUCKET_API_TOKEN,
+        };
+  }
+  const values = readAll("Bitbucket", APP_PASSWORD_NAMES);
+  return values === null
+    ? null
+    : {
+        credential: "app password",
+        username: values.BITBUCKET_USERNAME,
+        password: values.BITBUCKET_APP_PASSWORD,
+      };
 };
 
 const readGitHub = async (

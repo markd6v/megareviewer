@@ -63,8 +63,9 @@ describe("loadConfig: Bitbucket", () => {
       BITBUCKET_WORKSPACE: "acme",
     });
     expect(config.bitbucket).toEqual({
-      email: "lee@example.com",
-      apiToken: "ATATT-x",
+      credential: "api token",
+      username: "lee@example.com",
+      password: "ATATT-x",
       workspace: "acme",
     });
     expect(config.github).toBeNull();
@@ -90,17 +91,49 @@ describe("loadConfig: Bitbucket", () => {
   it("reports a workspace without credentials", async () => {
     const { problems } = await load({ ...GITHUB, BITBUCKET_WORKSPACE: "acme" });
     expect(problems).toEqual([expect.stringContaining("BITBUCKET_WORKSPACE is set without")]);
-    expect(problems[0]).not.toContain("App passwords");
   });
 
-  it("says app passwords aren't supported when one is set", async () => {
-    const { problems } = await load({
-      ...GITHUB,
+  it("reads a username and app password", async () => {
+    const { config, problems } = await load({
+      BITBUCKET_USERNAME: "lee",
+      BITBUCKET_APP_PASSWORD: "app-password",
       BITBUCKET_WORKSPACE: "acme",
+    });
+    expect(config.bitbucket).toEqual({
+      credential: "app password",
+      username: "lee",
+      password: "app-password",
+      workspace: "acme",
+    });
+    expect(problems).toEqual([]);
+  });
+
+  it("prefers an API token to an app password", async () => {
+    const { config } = await load({
+      BITBUCKET_EMAIL: "lee@example.com",
+      BITBUCKET_API_TOKEN: "ATATT-x",
       BITBUCKET_USERNAME: "lee",
       BITBUCKET_APP_PASSWORD: "app-password",
     });
-    expect(problems).toEqual([expect.stringContaining("App passwords (BITBUCKET_APP_PASSWORD)")]);
+    expect(config.bitbucket?.credential).toBe("api token");
+  });
+
+  it("ignores a stray username when an API token is set", async () => {
+    const { problems } = await load({
+      BITBUCKET_EMAIL: "lee@example.com",
+      BITBUCKET_API_TOKEN: "ATATT-x",
+      BITBUCKET_USERNAME: "lee",
+    });
+    expect(problems).toEqual([]);
+  });
+
+  it("reports an app password without a username, and no extra no-host problem", async () => {
+    const { config, problems } = await load({
+      BITBUCKET_APP_PASSWORD: "app-password",
+      BITBUCKET_WORKSPACE: "acme",
+    });
+    expect(config.bitbucket).toBeNull();
+    expect(problems).toEqual(["Bitbucket is partly configured: also set BITBUCKET_USERNAME."]);
   });
 });
 

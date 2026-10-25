@@ -146,7 +146,12 @@ describe("assemble and serve", () => {
 describe("compose", () => {
   const configIn = async (): Promise<Config> => ({
     github: { token: "ghp_test", source: "GITHUB_TOKEN" },
-    bitbucket: { email: "lee@example.com", apiToken: "bb-test", workspace: null },
+    bitbucket: {
+      credential: "api token",
+      username: "lee@example.com",
+      password: "bb-test",
+      workspace: null,
+    },
     jira: null,
     home: join(await mkdtemp(join(tmpdir(), "megareviewer-cli-")), "home"),
     logLevel: "info",

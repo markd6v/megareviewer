@@ -1,13 +1,20 @@
 import { describe, expect, it } from "vitest";
 import { allFixtures, FakeGitHost, FakeTicketSource } from "../application/testing/index.ts";
 import { err, ok } from "../domain/shared/index.ts";
-import type { Config } from "./config.ts";
+import type { BitbucketConfig, Config } from "./config.ts";
 import { type DoctorDeps, formatCheck, runDoctor } from "./doctor.ts";
 import { NODE_FIX } from "./node-version.ts";
 
+const BITBUCKET: BitbucketConfig = {
+  credential: "api token",
+  username: "lee@example.com",
+  password: "x",
+  workspace: "acme",
+};
+
 const CONFIG: Config = {
   github: { token: "ghp_x", source: "gh auth token" },
-  bitbucket: { email: "lee@example.com", apiToken: "x", workspace: "acme" },
+  bitbucket: BITBUCKET,
   jira: { baseUrl: "https://acme.atlassian.net", email: "lee@example.com", apiToken: "x" },
   home: "/home/lee/.megareviewer",
   logLevel: "info",
@@ -81,19 +88,30 @@ describe("runDoctor", () => {
   it("fails Bitbucket's login, and hints at the workspace when there is none", async () => {
     const bitbucket = new FakeGitHost({ host: "bitbucket" });
     bitbucket.failNext("currentUser", HOST_ERROR);
-    expect((await lines({ hosts: { ...deps().hosts, bitbucket } }))[2]).toMatch(
-      /^✗ Bitbucket: Bad credentials\n/,
+    expect((await lines({ hosts: { ...deps().hosts, bitbucket } }))[2]).toBe(
+      "✗ Bitbucket: Bad credentials\n" +
+        "    Check BITBUCKET_EMAIL and BITBUCKET_API_TOKEN, and the token's scopes.",
     );
     const noWorkspace = await lines({
       config: {
         ...CONFIG,
-        bitbucket: { email: "lee@example.com", apiToken: "x", workspace: null },
+        bitbucket: { ...BITBUCKET, workspace: null },
       },
     });
     expect(noWorkspace[2]).toBe(
       "✓ Bitbucket: signed in as Lee Park; the picker lists no Bitbucket PRs\n" +
         "    Set BITBUCKET_WORKSPACE to list its PRs.",
     );
+  });
+
+  it("suggests an API token when an app password is rejected", async () => {
+    const bitbucket = new FakeGitHost({ host: "bitbucket" });
+    bitbucket.failNext("currentUser", HOST_ERROR);
+    const appPassword = await lines({
+      hosts: { ...deps().hosts, bitbucket },
+      config: { ...CONFIG, bitbucket: { ...BITBUCKET, credential: "app password" } },
+    });
+    expect(appPassword[2]).toContain("set BITBUCKET_EMAIL and BITBUCKET_API_TOKEN");
   });
 
   it("asks Jira for a key that doesn't exist and fails on an error", async () => {

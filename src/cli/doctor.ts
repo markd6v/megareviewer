@@ -12,7 +12,7 @@ import {
   NO_ANTHROPIC_CREDENTIALS,
   systemClock,
 } from "./compose.ts";
-import type { Config, GitHubTokenSource } from "./config.ts";
+import type { BitbucketCredential, Config, GitHubTokenSource } from "./config.ts";
 import { NODE_FIX, nodeSupported } from "./node-version.ts";
 
 export interface Check {
@@ -68,6 +68,13 @@ const checkGitHub = async (deps: DoctorDeps): Promise<Check> => {
     : check("fail", "GitHub", user.error.message, GITHUB_FIX[github.source]);
 };
 
+const BITBUCKET_FIX: Readonly<Record<BitbucketCredential, string>> = {
+  "api token": "Check BITBUCKET_EMAIL and BITBUCKET_API_TOKEN, and the token's scopes.",
+  // Atlassian removed app passwords in July 2026, so a rejected one is most likely just that.
+  "app password":
+    "Check BITBUCKET_USERNAME and BITBUCKET_APP_PASSWORD. If Bitbucket no longer accepts app passwords, set BITBUCKET_EMAIL and BITBUCKET_API_TOKEN (a scoped Atlassian API token) instead.",
+};
+
 const checkBitbucket = async (deps: DoctorDeps): Promise<Check> => {
   const { bitbucket } = deps.config;
   const host = deps.hosts.bitbucket;
@@ -81,12 +88,7 @@ const checkBitbucket = async (deps: DoctorDeps): Promise<Check> => {
   }
   const user = await host.currentUser();
   if (!user.ok) {
-    return check(
-      "fail",
-      "Bitbucket",
-      user.error.message,
-      "Check BITBUCKET_EMAIL and BITBUCKET_API_TOKEN, and the token's scopes.",
-    );
+    return check("fail", "Bitbucket", user.error.message, BITBUCKET_FIX[bitbucket.credential]);
   }
   const signedIn = `signed in as ${user.value.name}`;
   return bitbucket.workspace === null
